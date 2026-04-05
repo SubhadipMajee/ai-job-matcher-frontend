@@ -620,6 +620,16 @@ export default function App() {
     setAL(`email_${i}`, false);
   };
 
+  const handleRoadmap = async (i) => {
+    setAL(`roadmap_${i}`, true);
+    try {
+      const form = new FormData();
+      form.append("missing_skills", JSON.stringify(jobResults[i]?.missing_skills || []));
+      const res = await axios.post(`${API}/skill-roadmap`, form);
+      setJobResults(p => ({ ...p, [i]: { ...p[i], roadmap: res.data.roadmap } }));
+    } catch (e) { alert("Roadmap error: " + e.message); }
+    setAL(`roadmap_${i}`, false);
+  };
   const handleATS = async (job, i) => {
     setAL(`ats_${i}`, true);
     try {
@@ -767,99 +777,147 @@ export default function App() {
                           {actionLoading[`email_${i}`] ? "⏳" : "✉️"} Generate Email
                         </button>
                         <button className={`action-btn ${actionLoading[`ats_${i}`] ? "loading" : ""}`}
-                          onClick={() => handleATS(job, i)} disabled={actionLoading[`ats_${i}`]}>
-                          {actionLoading[`ats_${i}`] ? "⏳" : "🤖"} ATS Score
+                        <button className={`action-btn ${actionLoading[`roadmap_${i}`] ? "loading" : ""}`}
+                          onClick={() => handleRoadmap(i)} disabled={actionLoading[`roadmap_${i}`]}>
+                          {actionLoading[`roadmap_${i}`] ? "⏳" : "🗺️"} Skill Roadmap
                         </button>
-                      </div>
+                        onClick={() => handleATS(job, i)} disabled={actionLoading[`ats_${i}`]}>
+                        {actionLoading[`ats_${i}`] ? "⏳" : "🤖"} ATS Score
+                      </button>
+                    </div>
 
                       {/* MATCH RESULT */}
-                      {result?.score !== undefined && (
-                        <div className="result-box">
-                          <div className="result-box-title">Skill Match Analysis</div>
-                          <div className="progress-bar">
-                            <div className="progress-fill" style={{
-                              width: `${result.score}%`,
-                              background: `linear-gradient(90deg, ${getScoreColor(result.score)}, ${getScoreColor(result.score)}88)`
-                            }} />
+                  {result?.score !== undefined && (
+                    <div className="result-box">
+                      <div className="result-box-title">Skill Match Analysis</div>
+                      <div className="progress-bar">
+                        <div className="progress-fill" style={{
+                          width: `${result.score}%`,
+                          background: `linear-gradient(90deg, ${getScoreColor(result.score)}, ${getScoreColor(result.score)}88)`
+                        }} />
+                      </div>
+                      {result.matched_skills?.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6, fontFamily: "var(--font-mono)" }}>MATCHED</div>
+                          <div className="skills-row">
+                            {result.matched_skills.map(s => <span key={s} className="skill-tag matched">{s}</span>)}
                           </div>
-                          {result.matched_skills?.length > 0 && (
-                            <>
-                              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6, fontFamily: "var(--font-mono)" }}>MATCHED</div>
-                              <div className="skills-row">
-                                {result.matched_skills.map(s => <span key={s} className="skill-tag matched">{s}</span>)}
-                              </div>
-                            </>
-                          )}
-                          {result.missing_skills?.length > 0 && (
-                            <>
-                              <div style={{ fontSize: 12, color: "var(--muted)", margin: "12px 0 6px", fontFamily: "var(--font-mono)" }}>MISSING</div>
-                              <div className="skills-row">
-                                {result.missing_skills.map(s => <span key={s} className="skill-tag missing">{s}</span>)}
-                              </div>
-                            </>
-                          )}
-                        </div>
+                        </>
                       )}
-
-                      {/* ATS RESULT */}
-                      {result?.ats && (
-                        <div className="result-box">
-                          <div className="result-box-title">ATS Analysis</div>
-                          <div className="ats-grid">
-                            {[
-                              { label: "ATS Score", val: result.ats.ats_score },
-                              { label: "Keyword Match", val: result.ats.keyword_match },
-                              { label: "Format Score", val: result.ats.format_score },
-                              { label: "Experience Match", val: result.ats.experience_match },
-                            ].map(m => (
-                              <div className="ats-metric" key={m.label}>
-                                <div className="ats-metric-label">{m.label}</div>
-                                <div className="ats-metric-value" style={{ color: getScoreColor(m.val) }}>{m.val}%</div>
-                              </div>
-                            ))}
+                      {result.missing_skills?.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 12, color: "var(--muted)", margin: "12px 0 6px", fontFamily: "var(--font-mono)" }}>MISSING</div>
+                          <div className="skills-row">
+                            {result.missing_skills.map(s => <span key={s} className="skill-tag missing">{s}</span>)}
                           </div>
-                          {result.ats.strengths?.length > 0 && (
-                            <>
-                              <div style={{ fontSize: 11, color: "var(--green)", fontFamily: "var(--font-mono)", letterSpacing: 2, marginBottom: 8 }}>STRENGTHS</div>
-                              <ul className="strength-list">
-                                {result.ats.strengths.map(s => <li key={s}><span className="dot" style={{ color: "var(--green)" }}>▸</span>{s}</li>)}
-                              </ul>
-                            </>
-                          )}
-                          {result.ats.improvements?.length > 0 && (
-                            <>
-                              <div style={{ fontSize: 11, color: "var(--yellow)", fontFamily: "var(--font-mono)", letterSpacing: 2, margin: "12px 0 8px" }}>IMPROVEMENTS</div>
-                              <ul className="strength-list">
-                                {result.ats.improvements.map(s => <li key={s}><span className="dot" style={{ color: "var(--yellow)" }}>▸</span>{s}</li>)}
-                              </ul>
-                            </>
-                          )}
-                        </div>
-                      )}
-
-                      {/* IMPROVED RESUME */}
-                      {result?.improved_resume && (
-                        <div className="result-box">
-                          <div className="result-box-title">Optimized Resume</div>
-                          <textarea className="text-output" value={result.improved_resume} readOnly rows={10} />
-                        </div>
-                      )}
-
-                      {/* EMAIL */}
-                      {result?.email && (
-                        <div className="result-box">
-                          <div className="result-box-title">Application Email</div>
-                          <textarea className="text-output" value={result.email} readOnly rows={10} />
-                        </div>
+                        </>
                       )}
                     </div>
                   )}
+
+                  {/* ATS RESULT */}
+                  {result?.ats && (
+                    <div className="result-box">
+                      <div className="result-box-title">ATS Analysis</div>
+                      <div className="ats-grid">
+                        {[
+                          { label: "ATS Score", val: result.ats.ats_score },
+                          { label: "Keyword Match", val: result.ats.keyword_match },
+                          { label: "Format Score", val: result.ats.format_score },
+                          { label: "Experience Match", val: result.ats.experience_match },
+                        ].map(m => (
+                          <div className="ats-metric" key={m.label}>
+                            <div className="ats-metric-label">{m.label}</div>
+                            <div className="ats-metric-value" style={{ color: getScoreColor(m.val) }}>{m.val}%</div>
+                          </div>
+                        ))}
+                      </div>
+                      {result.ats.strengths?.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 11, color: "var(--green)", fontFamily: "var(--font-mono)", letterSpacing: 2, marginBottom: 8 }}>STRENGTHS</div>
+                          <ul className="strength-list">
+                            {result.ats.strengths.map(s => <li key={s}><span className="dot" style={{ color: "var(--green)" }}>▸</span>{s}</li>)}
+                          </ul>
+                        </>
+                      )}
+                      {result.ats.improvements?.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 11, color: "var(--yellow)", fontFamily: "var(--font-mono)", letterSpacing: 2, margin: "12px 0 8px" }}>IMPROVEMENTS</div>
+                          <ul className="strength-list">
+                            {result.ats.improvements.map(s => <li key={s}><span className="dot" style={{ color: "var(--yellow)" }}>▸</span>{s}</li>)}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* IMPROVED RESUME */}
+                  {result?.improved_resume && (
+                    <div className="result-box">
+                      <div className="result-box-title">Optimized Resume</div>
+                      <textarea className="text-output" value={result.improved_resume} readOnly rows={10} />
+                    </div>
+                  )}
+
+                  {/* ROADMAP */}
+                  {result?.roadmap && result.roadmap.length > 0 && (
+                    <div className="result-box">
+                      <div className="result-box-title">Skill Gap Roadmap</div>
+                      {result.roadmap.map((item, ri) => (
+                        <div key={ri} style={{
+                          background: "var(--surface)", border: "1px solid var(--border)",
+                          borderRadius: 10, padding: 16, marginBottom: 12
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span style={{ fontWeight: 700, fontSize: 15 }}>{item.skill}</span>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <span style={{
+                                fontFamily: "var(--font-mono)", fontSize: 11, padding: "3px 8px",
+                                borderRadius: 4, border: "1px solid var(--accent)", color: "var(--accent)"
+                              }}>{item.level}</span>
+                              <span style={{
+                                fontFamily: "var(--font-mono)", fontSize: 11, padding: "3px 8px",
+                                borderRadius: 4, border: "1px solid var(--muted)", color: "var(--muted)"
+                              }}>⏱ {item.time}</span>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {item.resources?.map((r, rj) => (
+                              <a key={rj} href={r.url} target="_blank" rel="noreferrer" style={{
+                                display: "flex", justifyContent: "space-between", alignItems: "center",
+                                padding: "8px 12px", background: "var(--surface2)",
+                                borderRadius: 8, textDecoration: "none", border: "1px solid var(--border)",
+                                transition: "border-color 0.2s"
+                              }}>
+                                <span style={{ color: "var(--text)", fontSize: 13 }}>{r.name}</span>
+                                <span style={{
+                                  fontFamily: "var(--font-mono)", fontSize: 11,
+                                  color: r.type === "Free" ? "var(--green)" : "var(--yellow)"
+                                }}>{r.type}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* EMAIL */}
+                  {result?.email && (
+                    <div className="result-box">
+                      <div className="result-box-title">Application Email</div>
+                      <textarea className="text-output" value={result.email} readOnly rows={10} />
+                    </div>
+                  )}
                 </div>
-              );
+              )
+            }
+                </div>
+        );
             })}
-          </>
+      </>
         )}
-      </div>
+    </div >
     </>
   );
 }
