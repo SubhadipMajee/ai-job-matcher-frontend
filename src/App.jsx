@@ -547,6 +547,9 @@ export default function App() {
   const [jobResults, setJobResults] = useState({});
   const [expanded, setExpanded] = useState({});
   const [actionLoading, setActionLoading] = useState({});
+  const [location, setLocation] = useState("");
+  const [jobType, setJobType] = useState("");
+  const [minScore, setMinScore] = useState(0);
 
   const setAL = (key, val) => setActionLoading(p => ({ ...p, [key]: val }));
 
@@ -564,6 +567,9 @@ export default function App() {
 
       const jobForm = new FormData();
       jobForm.append("job_role", jobRole);
+      jobForm.append("location", location);
+      jobForm.append("job_type", jobType);
+
       const jobRes = await axios.post(`${API}/fetch-jobs`, jobForm);
       setJobs(jobRes.data.jobs);
     } catch (e) {
@@ -636,7 +642,6 @@ export default function App() {
           <h1>Job Match &<br />Resume Optimizer</h1>
           <p>Upload your resume. Find your fit. Get hired.</p>
         </div>
-
         {/* INPUT */}
         <div className="input-section">
           <div className="input-grid">
@@ -657,10 +662,50 @@ export default function App() {
                 placeholder="e.g. React Developer"
                 value={jobRole}
                 onChange={e => setJobRole(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleAnalyze()}
+                style={{ minHeight: "unset", height: 46, marginBottom: 10 }}
+              />
+              <label style={{ marginTop: 8 }}>Location (optional)</label>
+              <input
+                className="text-input"
+                type="text"
+                placeholder="e.g. New York, Remote"
+                value={location}
+                onChange={e => setLocation(e.target.value)}
+                style={{ minHeight: "unset", height: 46 }}
               />
             </div>
           </div>
+
+          <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Job Type</label>
+              <select
+                value={jobType}
+                onChange={e => setJobType(e.target.value)}
+                style={{
+                  width: "100%", padding: "12px 16px", background: "var(--surface2)",
+                  border: "1px solid var(--border)", borderRadius: 10, color: "var(--text)",
+                  fontFamily: "var(--font-head)", fontSize: 14, outline: "none"
+                }}
+              >
+                <option value="">Any Type</option>
+                <option value="FULLTIME">Full Time</option>
+                <option value="PARTTIME">Part Time</option>
+                <option value="INTERN">Internship</option>
+                <option value="CONTRACTOR">Contract</option>
+              </select>
+            </div>
+            <div className="input-group" style={{ flex: 1 }}>
+              <label>Min Match Score: {minScore}%</label>
+              <input
+                type="range" min="0" max="80" step="5"
+                value={minScore}
+                onChange={e => setMinScore(Number(e.target.value))}
+                style={{ width: "100%", marginTop: 14, accentColor: "var(--accent)" }}
+              />
+            </div>
+          </div>
+
           <button className="analyze-btn" onClick={handleAnalyze} disabled={loading}>
             {loading ? "⏳ Analyzing..." : "🔍 Analyze Jobs"}
           </button>
@@ -674,7 +719,11 @@ export default function App() {
               Found <span>{jobs.length}</span> jobs for "{jobRole}"
             </div>
 
-            {jobs.map((job, i) => {
+            {jobs.filter((_, i) => {
+              const score = jobResults[i]?.score;
+              if (score === undefined) return true;
+              return score >= minScore;
+            }).map((job, i) => {
               const result = jobResults[i];
               const isOpen = expanded[i];
               const score = result?.score;
@@ -685,6 +734,10 @@ export default function App() {
                     <div className="job-info">
                       <div className="job-title">{job.title}</div>
                       <div className="job-company">@ {job.company}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)", marginTop: 4, display: "flex", gap: 12 }}>
+                        {job.location && <span>📍 {job.location}</span>}
+                        {job.job_type && <span>💼 {job.job_type}</span>}
+                      </div>
                     </div>
                     <div className="job-score-badge">
                       {score !== undefined && (
