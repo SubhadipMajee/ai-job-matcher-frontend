@@ -553,6 +553,31 @@ export default function App() {
 
   const setAL = (key, val) => setActionLoading(p => ({ ...p, [key]: val }));
 
+  const downloadAsTxt = (text, filename) => {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadAsDoc = (text, filename) => {
+    const html = `
+    <html><head><meta charset="utf-8">
+    <style>body{font-family:Arial,sans-serif;padding:40px;line-height:1.6;}</style>
+    </head><body><pre style="white-space:pre-wrap;">${text}</pre></body></html>
+  `;
+    const blob = new Blob([html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleAnalyze = async () => {
     if (!file || !jobRole) return alert("Upload a resume and enter a job role");
     setLoading(true);
@@ -852,10 +877,27 @@ export default function App() {
                       )}
 
                       {/* IMPROVED RESUME */}
+                      {/* IMPROVED RESUME */}
                       {result?.improved_resume && (
                         <div className="result-box">
                           <div className="result-box-title">Optimized Resume</div>
                           <textarea className="text-output" value={result.improved_resume} readOnly rows={10} />
+                          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                            <button
+                              className="action-btn"
+                              onClick={() => downloadAsTxt(result.improved_resume, "optimized_resume.txt")}
+                              style={{ flex: 1 }}
+                            >
+                              ⬇️ Download TXT
+                            </button>
+                            <button
+                              className="action-btn"
+                              onClick={() => downloadAsDoc(result.improved_resume, "optimized_resume.doc")}
+                              style={{ flex: 1 }}
+                            >
+                              📝 Download Word
+                            </button>
+                          </div>
                         </div>
                       )}
 
