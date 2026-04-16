@@ -1137,6 +1137,14 @@ const styles = `
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   .fade-up { animation: fadeUp 0.4s ease forwards; }
+
+  .company-type-group { margin-bottom: 20px; }
+  .company-type-label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 10px; letter-spacing: 0.3px; }
+  .company-type-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .company-pill { padding: 9px 18px; border: 1px solid var(--border2); border-radius: 20px; background: var(--surface2); color: var(--muted); font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.25s ease; display: flex; align-items: center; gap: 7px; user-select: none; }
+  .company-pill:hover { border-color: var(--gold); color: var(--gold); background: rgba(232,184,75,0.04); }
+  .company-pill.active { border-color: var(--gold); color: #0f0e0c; background: var(--gold); font-weight: 600; box-shadow: 0 2px 12px rgba(232,184,75,0.25); }
+  .company-pill .pill-icon { font-size: 15px; line-height: 1; }
 `;
 
 function scoreClass(s) {
@@ -1156,6 +1164,7 @@ export default function App() {
   const [jobRole, setJobRole] = useState("");
   const [location, setLocation] = useState("");
   const [jobType, setJobType] = useState("");
+  const [companyType, setCompanyType] = useState("");
   const [minScore, setMinScore] = useState(0);
   const [loading, setLoading] = useState(false);
   const [resumeText, setResumeText] = useState("");
@@ -1180,6 +1189,7 @@ export default function App() {
       jf.append("job_role", jobRole);
       jf.append("location", location);
       jf.append("job_type", jobType);
+      jf.append("company_type", companyType);
       const jr = await axios.post(`${API}/fetch-jobs`, jf);
       setJobs(jr.data.jobs);
     } catch (e) { alert("Error: " + (e.response?.data?.detail || e.message)); }
@@ -1328,6 +1338,28 @@ export default function App() {
                   value={minScore} onChange={e => setMinScore(Number(e.target.value))} />
                 <span className="slider-val">{minScore}%</span>
               </div>
+            </div>
+          </div>
+
+          <div className="company-type-group">
+            <label className="company-type-label">Company Type</label>
+            <div className="company-type-pills">
+              {[
+                { value: "", label: "All Types", icon: "◉" },
+                { value: "product based", label: "Product Based", icon: "🏢" },
+                { value: "service based", label: "Service Based", icon: "🔧" },
+                { value: "startup", label: "Startup", icon: "🚀" },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  className={`company-pill ${companyType === opt.value ? "active" : ""}`}
+                  onClick={() => setCompanyType(companyType === opt.value ? "" : opt.value)}
+                  type="button"
+                >
+                  <span className="pill-icon">{opt.icon}</span>
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
