@@ -1174,6 +1174,10 @@ export default function App() {
   const [expanded, setExpanded] = useState({});
   const [busy, setBusy] = useState({});
 
+  const [tailorJD, setTailorJD] = useState("");
+  const [tailorResult, setTailorResult] = useState("");
+  const [tailorLoading, setTailorLoading] = useState(false);
+
   const set = (k, v) => setBusy(p => ({ ...p, [k]: v }));
   const upd = (i, data) => setResults(p => ({ ...p, [i]: { ...p[i], ...data } }));
 
@@ -1269,6 +1273,20 @@ export default function App() {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([html], { type: "application/msword" }));
     a.download = name; a.click();
+  };
+
+  const tailorResume = async () => {
+    if (!resumeText) return alert("Analyze jobs first to load your resume");
+    if (!tailorJD) return alert("Paste a job description");
+    setTailorLoading(true);
+    try {
+      const f = new FormData();
+      f.append("resume_text", resumeText);
+      f.append("job_description", tailorJD);
+      const r = await axios.post(`${API}/tailor-resume`, f);
+      setTailorResult(r.data.tailored_resume);
+    } catch (e) { alert(e.message); }
+    setTailorLoading(false);
   };
 
   return (
@@ -1370,145 +1388,178 @@ export default function App() {
         </div>
 
         {jobs.length > 0 && (
-          <div className="fade-up">
-            <div className="results-header">
-              <span className="results-title">Results</span>
-              <span className="results-count">{jobs.length} jobs found</span>
+          { resumeText && (
+            <div className="form-card fade-up" style={{ marginBottom: 24 }}>
+              <div className="form-title">
+                <span className="form-title-num">02</span>
+                Tailor Resume for a Specific Job
+              </div>
+              <div className="field">
+                <label>Paste Job Description</label>
+                <textarea
+                  className="input"
+                  placeholder="Paste the full job description here..."
+                  value={tailorJD}
+                  onChange={e => setTailorJD(e.target.value)}
+                  rows={6}
+                  style={{ resize: "vertical", lineHeight: 1.6 }}
+                />
+              </div>
+              <button className="submit-btn" onClick={tailorResume} disabled={tailorLoading}>
+                {tailorLoading ? "Tailoring…" : "→ Tailor My Resume"}
+              </button>
+              {tailorLoading && <div className="progress"><div className="progress-inner" /></div>}
+              {tailorResult && (
+                <div className="panel" style={{ marginTop: 16 }}>
+                  <div className="panel-title">Tailored Resume</div>
+                  <textarea className="text-out" value={tailorResult} readOnly rows={12} />
+                  <div className="dl-row">
+                    <button className="dl-btn" onClick={() => dlTxt(tailorResult, "tailored_resume.txt")}>⬇ Download TXT</button>
+                    <button className="dl-btn" onClick={() => dlDoc(tailorResult, "tailored_resume.doc")}>⬇ Download Word</button>
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+        <div className="fade-up">
+          <div className="results-header">
+            <span className="results-title">Results</span>
+            <span className="results-count">{jobs.length} jobs found</span>
+          </div>
 
-            {jobs.map((job, i) => {
-              const r = results[i];
-              const isOpen = expanded[i];
-              const sc = r?.score;
-              if (sc !== undefined && sc < minScore) return null;
+          {jobs.map((job, i) => {
+            const r = results[i];
+            const isOpen = expanded[i];
+            const sc = r?.score;
+            if (sc !== undefined && sc < minScore) return null;
 
-              return (
-                <div className="job-card fade-up" key={i}>
-                  <div className="job-top" onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}>
-                    <div className="job-left">
-                      <div className="job-title">{job.title}</div>
-                      <div className="job-company">{job.company}</div>
-                      <div className="job-tags">
-                        {job.location && <span className="job-tag">📍 {job.location}</span>}
-                        {job.job_type && <span className="job-tag">💼 {job.job_type}</span>}
-                      </div>
-                    </div>
-                    <div className="job-right">
-                      <div className={`score-ring ${scoreClass(sc)}`}>
-                        {sc !== undefined ? `${sc}%` : "—"}
-                      </div>
-                      <span className={`chevron ${isOpen ? "open" : ""}`}>⌄</span>
+            return (
+              <div className="job-card fade-up" key={i}>
+                <div className="job-top" onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}>
+                  <div className="job-left">
+                    <div className="job-title">{job.title}</div>
+                    <div className="job-company">{job.company}</div>
+                    <div className="job-tags">
+                      {job.location && <span className="job-tag">📍 {job.location}</span>}
+                      {job.job_type && <span className="job-tag">💼 {job.job_type}</span>}
                     </div>
                   </div>
+                  <div className="job-right">
+                    <div className={`score-ring ${scoreClass(sc)}`}>
+                      {sc !== undefined ? `${sc}%` : "—"}
+                    </div>
+                    <span className={`chevron ${isOpen ? "open" : ""}`}>⌄</span>
+                  </div>
+                </div>
 
-                  {isOpen && (
-                    <div className="job-body">
-                      <a className="apply-btn" href={job.link} target="_blank" rel="noreferrer">Apply ↗</a>
+                {isOpen && (
+                  <div className="job-body">
+                    <a className="apply-btn" href={job.link} target="_blank" rel="noreferrer">Apply ↗</a>
 
-                      <div className="actions">
-                        {[
-                          { key: `m${i}`, label: "Match Score", icon: "◎", fn: () => matchScore(job, i) },
-                          { key: `r${i}`, label: "Improve Resume", icon: "✦", fn: () => improveResume(i) },
-                          { key: `e${i}`, label: "Write Email", icon: "✉", fn: () => genEmail(job, i) },
-                          { key: `a${i}`, label: "ATS Score", icon: "◈", fn: () => atsScore(job, i) },
-                          { key: `rd${i}`, label: "Skill Roadmap", icon: "◆", fn: () => roadmap(i) },
-                        ].map(btn => (
-                          <button key={btn.key} className="act-btn"
-                            onClick={btn.fn} disabled={busy[btn.key]}>
-                            {busy[btn.key] ? "…" : btn.icon} {btn.label}
-                          </button>
-                        ))}
+                    <div className="actions">
+                      {[
+                        { key: `m${i}`, label: "Match Score", icon: "◎", fn: () => matchScore(job, i) },
+                        { key: `r${i}`, label: "Improve Resume", icon: "✦", fn: () => improveResume(i) },
+                        { key: `e${i}`, label: "Write Email", icon: "✉", fn: () => genEmail(job, i) },
+                        { key: `a${i}`, label: "ATS Score", icon: "◈", fn: () => atsScore(job, i) },
+                        { key: `rd${i}`, label: "Skill Roadmap", icon: "◆", fn: () => roadmap(i) },
+                      ].map(btn => (
+                        <button key={btn.key} className="act-btn"
+                          onClick={btn.fn} disabled={busy[btn.key]}>
+                          {busy[btn.key] ? "…" : btn.icon} {btn.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {r?.score !== undefined && (
+                      <div className="panel">
+                        <div className="panel-title">Skill Match</div>
+                        <div className="match-bar-wrap">
+                          <div className="match-bar-fill" style={{ width: `${r.score}%`, background: scoreColor(r.score) }} />
+                        </div>
+                        {r.matched_skills?.length > 0 && (
+                          <><div className="skills-section-label">Matched</div>
+                            <div className="chips">{r.matched_skills.map(s => <span key={s} className="chip matched">{s}</span>)}</div></>
+                        )}
+                        {r.missing_skills?.length > 0 && (
+                          <><div className="skills-section-label">Missing</div>
+                            <div className="chips">{r.missing_skills.map(s => <span key={s} className="chip missing">{s}</span>)}</div></>
+                        )}
                       </div>
+                    )}
 
-                      {r?.score !== undefined && (
-                        <div className="panel">
-                          <div className="panel-title">Skill Match</div>
-                          <div className="match-bar-wrap">
-                            <div className="match-bar-fill" style={{ width: `${r.score}%`, background: scoreColor(r.score) }} />
-                          </div>
-                          {r.matched_skills?.length > 0 && (
-                            <><div className="skills-section-label">Matched</div>
-                              <div className="chips">{r.matched_skills.map(s => <span key={s} className="chip matched">{s}</span>)}</div></>
-                          )}
-                          {r.missing_skills?.length > 0 && (
-                            <><div className="skills-section-label">Missing</div>
-                              <div className="chips">{r.missing_skills.map(s => <span key={s} className="chip missing">{s}</span>)}</div></>
-                          )}
-                        </div>
-                      )}
-
-                      {r?.ats && (
-                        <div className="panel">
-                          <div className="panel-title">ATS Analysis</div>
-                          <div className="ats-grid">
-                            {[{ l: "Overall", v: r.ats.ats_score }, { l: "Keywords", v: r.ats.keyword_match }, { l: "Format", v: r.ats.format_score }, { l: "Experience", v: r.ats.experience_match }].map(m => (
-                              <div className="ats-card" key={m.l}>
-                                <div className="ats-card-label">{m.l}</div>
-                                <div className="ats-card-val" style={{ color: scoreColor(m.v) }}>{m.v}%</div>
-                              </div>
-                            ))}
-                          </div>
-                          {r.ats.strengths?.length > 0 && (
-                            <><div className="skills-section-label" style={{ color: "#5dba7e" }}>Strengths</div>
-                              <ul className="feedback-list" style={{ marginBottom: 12 }}>
-                                {r.ats.strengths.map(s => <li key={s} className="feedback-item"><span className="feedback-dot" style={{ color: "#5dba7e" }}>▸</span>{s}</li>)}
-                              </ul></>
-                          )}
-                          {r.ats.improvements?.length > 0 && (
-                            <><div className="skills-section-label" style={{ color: "#e8b84b" }}>Improvements</div>
-                              <ul className="feedback-list">
-                                {r.ats.improvements.map(s => <li key={s} className="feedback-item"><span className="feedback-dot" style={{ color: "#e8b84b" }}>▸</span>{s}</li>)}
-                              </ul></>
-                          )}
-                        </div>
-                      )}
-
-                      {r?.roadmap?.length > 0 && (
-                        <div className="panel">
-                          <div className="panel-title">Skill Roadmap</div>
-                          {r.roadmap.map((item, ri) => (
-                            <div className="roadmap-item" key={ri}>
-                              <div className="roadmap-header">
-                                <span className="roadmap-skill">{item.skill}</span>
-                                <div className="roadmap-meta">
-                                  <span className="roadmap-badge">{item.level}</span>
-                                  <span className="roadmap-badge">⏱ {item.time}</span>
-                                </div>
-                              </div>
-                              {item.resources?.map((res, rj) => (
-                                <a key={rj} className="resource-link" href={res.url} target="_blank" rel="noreferrer">
-                                  <span className="resource-name">{res.name}</span>
-                                  <span className={`resource-type ${res.type === "Free" ? "free" : "paid"}`}>{res.type}</span>
-                                </a>
-                              ))}
+                    {r?.ats && (
+                      <div className="panel">
+                        <div className="panel-title">ATS Analysis</div>
+                        <div className="ats-grid">
+                          {[{ l: "Overall", v: r.ats.ats_score }, { l: "Keywords", v: r.ats.keyword_match }, { l: "Format", v: r.ats.format_score }, { l: "Experience", v: r.ats.experience_match }].map(m => (
+                            <div className="ats-card" key={m.l}>
+                              <div className="ats-card-label">{m.l}</div>
+                              <div className="ats-card-val" style={{ color: scoreColor(m.v) }}>{m.v}%</div>
                             </div>
                           ))}
                         </div>
-                      )}
+                        {r.ats.strengths?.length > 0 && (
+                          <><div className="skills-section-label" style={{ color: "#5dba7e" }}>Strengths</div>
+                            <ul className="feedback-list" style={{ marginBottom: 12 }}>
+                              {r.ats.strengths.map(s => <li key={s} className="feedback-item"><span className="feedback-dot" style={{ color: "#5dba7e" }}>▸</span>{s}</li>)}
+                            </ul></>
+                        )}
+                        {r.ats.improvements?.length > 0 && (
+                          <><div className="skills-section-label" style={{ color: "#e8b84b" }}>Improvements</div>
+                            <ul className="feedback-list">
+                              {r.ats.improvements.map(s => <li key={s} className="feedback-item"><span className="feedback-dot" style={{ color: "#e8b84b" }}>▸</span>{s}</li>)}
+                            </ul></>
+                        )}
+                      </div>
+                    )}
 
-                      {r?.improved_resume && (
-                        <div className="panel">
-                          <div className="panel-title">Optimized Resume</div>
-                          <textarea className="text-out" value={r.improved_resume} readOnly rows={10} />
-                          <div className="dl-row">
-                            <button className="dl-btn" onClick={() => dlTxt(r.improved_resume, "resume.txt")}>⬇ Download TXT</button>
-                            <button className="dl-btn" onClick={() => dlDoc(r.improved_resume, "resume.doc")}>⬇ Download Word</button>
+                    {r?.roadmap?.length > 0 && (
+                      <div className="panel">
+                        <div className="panel-title">Skill Roadmap</div>
+                        {r.roadmap.map((item, ri) => (
+                          <div className="roadmap-item" key={ri}>
+                            <div className="roadmap-header">
+                              <span className="roadmap-skill">{item.skill}</span>
+                              <div className="roadmap-meta">
+                                <span className="roadmap-badge">{item.level}</span>
+                                <span className="roadmap-badge">⏱ {item.time}</span>
+                              </div>
+                            </div>
+                            {item.resources?.map((res, rj) => (
+                              <a key={rj} className="resource-link" href={res.url} target="_blank" rel="noreferrer">
+                                <span className="resource-name">{res.name}</span>
+                                <span className={`resource-type ${res.type === "Free" ? "free" : "paid"}`}>{res.type}</span>
+                              </a>
+                            ))}
                           </div>
-                        </div>
-                      )}
+                        ))}
+                      </div>
+                    )}
 
-                      {r?.email && (
-                        <div className="panel">
-                          <div className="panel-title">Application Email</div>
-                          <textarea className="text-out" value={r.email} readOnly rows={10} />
+                    {r?.improved_resume && (
+                      <div className="panel">
+                        <div className="panel-title">Optimized Resume</div>
+                        <textarea className="text-out" value={r.improved_resume} readOnly rows={10} />
+                        <div className="dl-row">
+                          <button className="dl-btn" onClick={() => dlTxt(r.improved_resume, "resume.txt")}>⬇ Download TXT</button>
+                          <button className="dl-btn" onClick={() => dlDoc(r.improved_resume, "resume.doc")}>⬇ Download Word</button>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                      </div>
+                    )}
+
+                    {r?.email && (
+                      <div className="panel">
+                        <div className="panel-title">Application Email</div>
+                        <textarea className="text-out" value={r.email} readOnly rows={10} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
         )}
       </div>
     </>
