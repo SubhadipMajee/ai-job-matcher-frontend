@@ -15,12 +15,10 @@ if (envApi && envApi.includes("0oc7")) {
   envApi = null; // discard stale render url if present in .env
 }
 
-const API = envApi || (isLocal ? "http://127.0.0.1:8000" : "https://ai-job-matcher-api.onrender.com");
+const API = envApi || (isLocal ? "/api" : "https://ai-job-matcher-api.onrender.com");
 
 async function apiReq(method, path, data = null, customHeaders = {}, retries = 2) {
-  const targetUrls = [API];
-  if (isLocal && API !== "http://127.0.0.1:8000") targetUrls.push("http://127.0.0.1:8000");
-  if (!targetUrls.includes("https://ai-job-matcher-api.onrender.com")) targetUrls.push("https://ai-job-matcher-api.onrender.com");
+  const targetUrls = isLocal ? ["/api", "http://127.0.0.1:8000", "https://ai-job-matcher-api.onrender.com"] : [API];
 
   let lastError;
   for (const baseUrl of targetUrls) {
