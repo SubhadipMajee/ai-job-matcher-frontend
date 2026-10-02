@@ -20,7 +20,7 @@ export default function DigestSettings({ userEmail, resumeSkills }) {
     if (!userEmail) return;
     try {
       const { data } = await supabase
-        .table("digest_settings")
+        .from("digest_settings")
         .select("*")
         .eq("email", userEmail)
         .maybeSingle();
@@ -60,13 +60,13 @@ export default function DigestSettings({ userEmail, resumeSkills }) {
       let error;
       if (existingSetting?.id) {
         const res = await supabase
-          .table("digest_settings")
+          .from("digest_settings")
           .update(payload)
           .eq("id", existingSetting.id);
         error = res.error;
       } else {
         const res = await supabase
-          .table("digest_settings")
+          .from("digest_settings")
           .insert([payload]);
         error = res.error;
       }
