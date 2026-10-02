@@ -8,31 +8,43 @@ import DigestSettings from "./components/DigestSettings";
 import ApplyPackModal from "./components/ApplyPackModal";
 import InterviewPrepView from "./components/InterviewPrepView";
 
-const API = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://ai-job-matcher-api.onrender.com");
+const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-const api = axios.create({
-  baseURL: API,
-  timeout: 120000,
-});
+let envApi = import.meta.env.VITE_API_URL;
+if (envApi && envApi.includes("0oc7")) {
+  envApi = null; // discard stale render url if present in .env
+}
 
-async function apiReq(method, path, data = null, customHeaders = {}, retries = 3) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      return await api({
-        method,
-        url: path,
-        data,
-        headers: customHeaders,
-      });
-    } catch (err) {
-      const isNetworkError = !err.response && (err.code === "ECONNABORTED" || err.message === "Network Error");
-      if (isNetworkError && attempt < retries) {
-        await new Promise((r) => setTimeout(r, 2500));
-        continue;
+const API = envApi || (isLocal ? "http://127.0.0.1:8000" : "https://ai-job-matcher-api.onrender.com");
+
+async function apiReq(method, path, data = null, customHeaders = {}, retries = 2) {
+  const targetUrls = [API];
+  if (isLocal && API !== "http://127.0.0.1:8000") targetUrls.push("http://127.0.0.1:8000");
+  if (!targetUrls.includes("https://ai-job-matcher-api.onrender.com")) targetUrls.push("https://ai-job-matcher-api.onrender.com");
+
+  let lastError;
+  for (const baseUrl of targetUrls) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        return await axios({
+          method,
+          url: `${baseUrl}${path}`,
+          data,
+          headers: customHeaders,
+          timeout: 120000,
+        });
+      } catch (err) {
+        lastError = err;
+        const isNetworkError = !err.response && (err.code === "ECONNABORTED" || err.message === "Network Error");
+        if (isNetworkError && attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1500));
+          continue;
+        }
+        break; // try next candidate URL
       }
-      throw err;
     }
   }
+  throw lastError;
 }
 
 const apiPost = (path, data, customHeaders = {}) => apiReq("POST", path, data, customHeaders);
