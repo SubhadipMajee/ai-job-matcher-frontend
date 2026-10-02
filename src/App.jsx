@@ -8,7 +8,7 @@ import DigestSettings from "./components/DigestSettings";
 import ApplyPackModal from "./components/ApplyPackModal";
 import InterviewPrepView from "./components/InterviewPrepView";
 
-const API = import.meta.env.VITE_API_URL || "https://ai-job-matcher-backend-0oc7.onrender.com";
+const API = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:8000" : "https://ai-job-matcher-api.onrender.com");
 
 const api = axios.create({
   baseURL: API,
