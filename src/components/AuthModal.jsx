@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "../supabase";
+import { supabase, isSupabaseConfigured } from "../supabase";
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -13,6 +13,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isSupabaseConfigured) {
+      setError("Please set VITE_SUPABASE_ANON_KEY in your frontend .env file to enable Supabase sign in.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setMessage(null);
