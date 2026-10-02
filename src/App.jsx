@@ -33,12 +33,16 @@ async function apiReq(method, path, data = null, customHeaders = {}, retries = 2
         });
       } catch (err) {
         lastError = err;
+        // If the server answered with an HTTP response (401, 404, 500, etc.), do NOT fail over
+        if (err.response) {
+          throw err;
+        }
         const isNetworkError = !err.response && (err.code === "ECONNABORTED" || err.message === "Network Error");
         if (isNetworkError && attempt < retries) {
-          await new Promise((r) => setTimeout(r, 1500));
+          await new Promise((r) => setTimeout(r, 1000));
           continue;
         }
-        break; // try next candidate URL
+        break; // try next candidate URL only on true network connection failure
       }
     }
   }
@@ -298,6 +302,11 @@ export default function App() {
 
   // Load Auth Session
   useEffect(() => {
+    if (window.location.hash.includes("otp_expired")) {
+      window.history.replaceState(null, "", window.location.pathname);
+      setShowAuthModal(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -459,7 +468,12 @@ export default function App() {
       });
       alert(`✓ "${job.title} @ ${job.company}" added to your Kanban tracker!`);
     } catch (e) {
-      alert("Failed to track job: " + e.message);
+      if (e.response?.status === 401) {
+        alert("Your login session has expired. Please sign in again.");
+        setShowAuthModal(true);
+      } else {
+        alert("Failed to track job: " + (e.response?.data?.detail || e.message));
+      }
     }
     setB(`tr${i}`, false);
   };
