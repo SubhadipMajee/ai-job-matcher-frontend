@@ -1,12 +1,71 @@
 <!doctype html>
-<html lang="en">
+<html class="dark" lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ai-job-matcher-frontend</title>
+    <title>AI Career Co-Pilot — Application Tracker & Career Hub</title>
+    <!-- Tailwind CSS CDN with forms & container queries plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Google Fonts: Inter & Newsreader -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400;1,6..72,600&display=swap" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              serif: ['Newsreader', 'Georgia', 'serif'],
+            },
+            colors: {
+              brand: {
+                gold: '#F59E0B',
+                'gold-light': '#FBBF24',
+                'gold-dim': '#78350F',
+                dark: '#080C14',
+                surface: '#111827',
+                card: '#161F30',
+                border: '#232D42',
+                'border-subtle': '#1B2436',
+                tag: '#1A2438'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #080C14;
+        background-image: 
+          radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 60%),
+          radial-gradient(circle at 100% 30%, rgba(59, 130, 246, 0.03) 0%, transparent 40%);
+        color: #E2E8F0;
+        min-height: 100vh;
+      }
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #0B0F17; }
+      ::-webkit-scrollbar-thumb { background: #232D42; border-radius: 9999px; }
+      ::-webkit-scrollbar-thumb:hover { background: #3B4B69; }
+      .glass-panel {
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      .gold-glow { text-shadow: 0 0 25px rgba(245, 158, 11, 0.25); }
+      .kanban-card { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+      .kanban-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(245, 158, 11, 0.35);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px -3px rgba(245, 158, 11, 0.1);
+      }
+    </style>
   </head>
-  <body>
+  <body class="font-sans antialiased text-slate-200 flex flex-col min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

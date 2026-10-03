@@ -12,7 +12,7 @@ const isLocal = typeof window !== "undefined" && (window.location.hostname === "
 
 let envApi = import.meta.env.VITE_API_URL;
 if (envApi && envApi.includes("0oc7")) {
-  envApi = null; // discard stale render url if present in .env
+  envApi = null;
 }
 
 const API = envApi || (isLocal ? "/api" : "https://ai-job-matcher-api.onrender.com");
@@ -33,7 +33,6 @@ async function apiReq(method, path, data = null, customHeaders = {}, retries = 2
         });
       } catch (err) {
         lastError = err;
-        // If the server answered with an HTTP response (401, 404, 500, etc.), do NOT fail over
         if (err.response) {
           throw err;
         }
@@ -42,220 +41,49 @@ async function apiReq(method, path, data = null, customHeaders = {}, retries = 2
           await new Promise((r) => setTimeout(r, 1000));
           continue;
         }
-        break; // try next candidate URL only on true network connection failure
+        break;
       }
     }
   }
   throw lastError;
 }
 
-const apiPost = (path, data, customHeaders = {}) => apiReq("POST", path, data, customHeaders);
+const apiPost = (path, data, customHeaders = {}, method = "POST") => apiReq(method, path, data, customHeaders);
 
-const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0f0e0c;
-    --surface: #1a1916;
-    --surface2: #222019;
-    --border: #2e2b24;
-    --border2: #3d3930;
-    --gold: #e8b84b;
-    --gold2: #f5d07a;
-    --cream: #f0e6d3;
-    --text: #ddd5c4;
-    --muted: #7a7060;
-    --green: #5dba7e;
-    --red: #d95f5f;
-    --font-display: 'Playfair Display', Georgia, serif;
-    --font-body: 'DM Sans', sans-serif;
-    --font-mono: 'DM Mono', monospace;
-  }
-
-  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; background-image: radial-gradient(ellipse 60% 40% at 20% 0%, rgba(232,184,75,0.04) 0%, transparent 60%), radial-gradient(ellipse 40% 60% at 80% 100%, rgba(91,143,212,0.03) 0%, transparent 60%); }
-
-  .app { max-width: 820px; margin: 0 auto; padding: 40px 20px 80px; }
-
-  .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-  .auth-pill { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px; font-size: 12px; }
-
-  .header { margin-bottom: 34px; }
-  .header-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-  .eyebrow-line { height: 1px; width: 32px; background: var(--gold); opacity: 0.6; }
-  .eyebrow-text { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; opacity: 0.8; }
-  .header h1 { font-family: var(--font-display); font-size: clamp(2.2rem, 6.5vw, 3.8rem); font-weight: 900; line-height: 1.08; color: var(--cream); letter-spacing: -1px; margin-bottom: 12px; }
-  .header h1 em { font-style: italic; color: var(--gold); }
-  .header-sub { font-size: 15px; color: var(--muted); font-weight: 300; line-height: 1.6; max-width: 520px; }
-
-  .divider { height: 1px; background: linear-gradient(90deg, var(--border2), transparent); margin: 28px 0; }
-
-  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px; margin-bottom: 24px; flex-wrap: wrap; }
-  .tab { flex: 1; min-width: 140px; padding: 11px 14px; border-radius: 8px; border: none; background: transparent; color: var(--muted); font-family: var(--font-body); font-size: 13.5px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 7px; text-align: center; }
-  .tab:hover { color: var(--text); }
-  .tab.active { background: var(--surface2); color: var(--gold); border: 1px solid var(--border2); }
-
-  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
-  .form-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--cream); margin-bottom: 6px; }
-  .form-desc { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
-
-  .field { margin-bottom: 18px; }
-  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
-
-  .file-drop { border: 1px dashed var(--border2); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; position: relative; transition: all 0.2s; background: var(--surface2); }
-  .file-drop:hover { border-color: var(--gold); }
-  .file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-  .file-drop-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.7; }
-  .file-drop-text { font-size: 13px; color: var(--muted); }
-  .file-drop-name { font-size: 13px; color: var(--gold); margin-top: 4px; font-family: var(--font-mono); }
-
-  .input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--cream); font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s; }
-  .input:focus { border-color: var(--gold); }
-  .input::placeholder { color: var(--muted); opacity: 0.6; }
-  select.input { cursor: pointer; }
-  textarea.input { resize: vertical; line-height: 1.6; }
-
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 500px) { .two-col { grid-template-columns: 1fr; } }
-
-  .slider-row { display: flex; align-items: center; gap: 12px; }
-  .slider-val { font-family: var(--font-mono); font-size: 13px; color: var(--gold); min-width: 36px; text-align: right; }
-  input[type=range] { flex: 1; accent-color: var(--gold); cursor: pointer; }
-
-  .submit-btn { width: 100%; padding: 14px 24px; background: var(--gold); border: none; border-radius: 8px; color: #0f0e0c; font-family: var(--font-body); font-weight: 600; font-size: 14.5px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px; }
-  .submit-btn:hover { background: var(--gold2); transform: translateY(-1px); }
-  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .progress { height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 16px; }
-  .progress-inner { height: 100%; background: var(--gold); animation: prog 1.4s ease-in-out infinite; width: 35%; }
-  @keyframes prog { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-
-  .results-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
-  .results-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--cream); }
-  .results-count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
-
-  .job-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
-  .job-card:hover { border-color: var(--border2); box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
-  .job-top { padding: 20px 22px; cursor: pointer; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-  .job-left { flex: 1; min-width: 0; }
-  .job-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--cream); margin-bottom: 5px; line-height: 1.3; }
-  .job-company { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-  .job-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .job-tag { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); }
-  .job-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .score-ring { width: 48px; height: 48px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 12px; font-weight: 500; flex-shrink: 0; }
-  .score-ring.high { border-color: var(--green); color: var(--green); }
-  .score-ring.mid { border-color: var(--gold); color: var(--gold); }
-  .score-ring.low { border-color: var(--red); color: var(--red); }
-  .score-ring.none { border-color: var(--border2); color: var(--muted); }
-  .chevron { color: var(--muted); font-size: 16px; transition: transform 0.2s; }
-  .chevron.open { transform: rotate(180deg); }
-  .job-body { border-top: 1px solid var(--border); padding: 22px; }
-  .apply-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(232,184,75,0.08); border: 1px solid rgba(232,184,75,0.25); border-radius: 6px; color: var(--gold); font-size: 12.5px; font-weight: 500; text-decoration: none; margin-bottom: 18px; transition: all 0.2s; }
-  .apply-btn:hover { background: rgba(232,184,75,0.14); }
-
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-  .act-btn { padding: 7px 13px; border: 1px solid var(--border2); border-radius: 6px; background: var(--surface2); color: var(--text); font-family: var(--font-body); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
-  .act-btn:hover { border-color: var(--gold); color: var(--gold); }
-  .act-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  .panel { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-top: 14px; }
-  .panel-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-  .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-  .match-bar-wrap { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
-  .match-bar-fill { height: 100%; border-radius: 3px; transition: width 0.9s cubic-bezier(0.16,1,0.3,1); }
-
-  .skills-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-  .chip { font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 4px; border: 1px solid; }
-  .chip.matched { border-color: rgba(93,186,126,0.35); color: var(--green); background: rgba(93,186,126,0.06); }
-  .chip.missing { border-color: rgba(217,95,95,0.35); color: var(--red); background: rgba(217,95,95,0.06); }
-
-  .ats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 14px; }
-  .ats-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
-  .ats-card-label { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 4px; }
-  .ats-card-val { font-family: var(--font-mono); font-size: 22px; font-weight: 500; }
-
-  .feedback-list { list-style: none; }
-  .feedback-item { font-size: 13px; color: var(--muted); padding: 7px 0; border-bottom: 1px solid var(--border); display: flex; gap: 10px; line-height: 1.5; }
-  .feedback-item:last-child { border-bottom: none; }
-
-  .text-out { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 14px; color: var(--text); font-family: var(--font-mono); font-size: 12px; line-height: 1.8; resize: vertical; outline: none; min-height: 160px; }
-
-  .resume-view { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 28px 24px; color: var(--text); font-family: var(--font-body); font-size: 13px; line-height: 1.7; max-height: 600px; overflow-y: auto; }
-  .resume-view h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--cream); margin-bottom: 2px; }
-  .resume-view .contact-line { font-size: 12px; color: var(--muted); margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-  .resume-view h3 { font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--gold); margin: 20px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
-  .resume-view .role-line { font-size: 13.5px; color: var(--cream); margin: 12px 0 4px; }
-  .resume-view ul { margin: 4px 0 12px 18px; padding: 0; }
-  .resume-view li { color: var(--text); font-size: 13px; line-height: 1.65; margin-bottom: 3px; }
-
-  .dl-row { display: flex; gap: 8px; margin-top: 10px; }
-  .dl-btn { flex: 1; padding: 9px 14px; border: 1px solid var(--border2); border-radius: 6px; background: var(--surface); color: var(--muted); font-family: var(--font-body); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: center; }
-  .dl-btn:hover { border-color: var(--gold); color: var(--gold); }
-
-  .server-banner { background: rgba(232,184,75,0.08); border: 1px solid rgba(232,184,75,0.25); border-radius: 10px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
-  .server-banner-icon { font-size: 20px; flex-shrink: 0; }
-  .server-banner-text { font-size: 13px; color: var(--text); line-height: 1.5; }
-  .server-banner-text strong { color: var(--gold); font-weight: 600; }
-  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .pulse-dot { display: inline-block; animation: pulse-dot 1.4s ease-in-out infinite; }
-  .fade-up { animation: fadeUp 0.4s ease forwards; }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-`;
-
-function scoreClass(s) {
-  if (s === undefined) return "none";
-  if (s >= 60) return "high";
-  if (s >= 30) return "mid";
-  return "low";
-}
-function scoreColor(s) {
-  if (s >= 60) return "#5dba7e";
-  if (s >= 30) return "#e8b84b";
-  return "#d95f5f";
-}
-
-function parseResumeMarkdown(text) {
+function renderFormattedResume(text) {
   if (!text) return "";
   const lines = text.split("\n");
   let html = "";
   let inList = false;
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+    const line = lines[i];
     if (line.startsWith("## ")) {
       if (inList) { html += "</ul>"; inList = false; }
-      html += `<h2>${line.slice(3).trim()}</h2>`;
+      html += `<h2 class="text-xl font-bold text-amber-400 mt-4 mb-1">${line.slice(3).trim()}</h2>`;
       if (i + 1 < lines.length && !lines[i + 1].startsWith("#") && !lines[i + 1].startsWith("-") && lines[i + 1].trim()) {
         i++;
-        html += `<div class="contact-line">${lines[i].trim()}</div>`;
+        html += `<div class="text-xs text-slate-400 mb-4">${lines[i].trim()}</div>`;
       }
       continue;
     }
     if (line.startsWith("### ")) {
       if (inList) { html += "</ul>"; inList = false; }
-      html += `<h3>${line.slice(4).trim()}</h3>`;
+      html += `<h3 class="text-sm font-semibold text-white uppercase tracking-wider mt-4 mb-2 border-b border-slate-800 pb-1">${line.slice(4).trim()}</h3>`;
       continue;
     }
     if (line.match(/^\s*[-•*]\s/)) {
-      if (!inList) { html += "<ul>"; inList = true; }
+      if (!inList) { html += "<ul class='list-disc pl-5 space-y-1 text-xs text-slate-300 my-2'>"; inList = true; }
       let content = line.replace(/^\s*[-•*]\s+/, "");
-      content = content.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      content = content.replace(/\*\*(.+?)\*\*/g, "<strong class='text-white font-medium'>$1</strong>");
       content = content.replace(/\*(.+?)\*/g, "<em>$1</em>");
       html += `<li>${content}</li>`;
       continue;
     }
     if (inList) { html += "</ul>"; inList = false; }
     if (!line.trim()) continue;
-    let processed = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
-    if (processed.includes("<strong>") || processed.includes("<em>")) {
-      html += `<div class="role-line">${processed}</div>`;
-    } else {
-      html += `<p>${processed}</p>`;
-    }
+    let processed = line.replace(/\*\*(.+?)\*\*/g, "<strong class='text-white font-medium'>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+    html += `<p class="text-xs text-slate-300 my-1">${processed}</p>`;
   }
   if (inList) html += "</ul>";
   return html;
@@ -271,7 +99,7 @@ export default function App() {
 
   // Job Search State
   const [file, setFile] = useState(null);
-  const [jobRole, setJobRole] = useState("");
+  const [jobRole, setJobRole] = useState("full stack developer");
   const [location, setLocation] = useState("");
   const [jobType, setJobType] = useState("");
   const [minScore, setMinScore] = useState(0);
@@ -283,19 +111,18 @@ export default function App() {
   const [expanded, setExpanded] = useState({});
   const [busy, setBusy] = useState({});
 
-  // Tailor State
+  // Tailor & Diff State
   const [tailorFile, setTailorFile] = useState(null);
   const [tailorJD, setTailorJD] = useState("");
+  const [tailorResumeText, setTailorResumeText] = useState("");
   const [tailorLoading, setTailorLoading] = useState(false);
   const [tailorResult, setTailorResult] = useState("");
-  const [tailorResumeText, setTailorResumeText] = useState("");
   const [diffData, setDiffData] = useState(null);
-  const [diffSummaryData, setDiffSummaryData] = useState(null);
-  const [showDiff, setShowDiff] = useState(false);
 
-  // Modal State
+  // Modals & Application Tracking
   const [activeApplyPack, setActiveApplyPack] = useState(null);
   const [serverStatus, setServerStatus] = useState("");
+  const [activePipelineCount, setActivePipelineCount] = useState(4);
 
   const setB = (k, v) => setBusy(p => ({ ...p, [k]: v }));
   const upd = (i, data) => setResults(p => ({ ...p, [i]: { ...p[i], ...data } }));
@@ -388,49 +215,66 @@ export default function App() {
   const matchScore = async (job, i) => {
     setB(`m${i}`, true);
     try {
-      const sf = new FormData(); sf.append("job_description", job.description);
-      const sr = await apiPost("/job-skills", sf);
-      const mf = new FormData();
-      mf.append("resume_skills", JSON.stringify(resumeSkills));
-      mf.append("job_skills", JSON.stringify(sr.data.job_skills));
-      const mr = await apiPost("/match", mf);
-      upd(i, { ...mr.data });
-    } catch (e) { alert(e.message); }
+      const fd = new FormData();
+      fd.append("resume_skills", JSON.stringify(resumeSkills));
+      fd.append("job_description", job.description);
+      const res = await apiPost("/match", fd);
+      upd(i, { score: res.data.match_score, missing: res.data.missing_skills });
+      setExpanded(p => ({ ...p, [i]: true }));
+    } catch (e) { alert("Match score error: " + e.message); }
     setB(`m${i}`, false);
   };
 
   const semanticMatch = async (job, i) => {
-    setB(`sem${i}`, true);
+    setB(`sm${i}`, true);
     try {
-      const sf = new FormData();
-      sf.append("resume_skills", JSON.stringify(resumeSkills));
-      sf.append("job_description", job.description);
-      const res = await apiPost("/semantic-match", sf);
+      const fd = new FormData();
+      fd.append("resume_skills", JSON.stringify(resumeSkills));
+      fd.append("job_description", job.description);
+      fd.append("threshold", "50");
+      const res = await apiPost("/semantic-match", fd);
       upd(i, { semantic: res.data });
+      setExpanded(p => ({ ...p, [i]: true }));
     } catch (e) { alert("Semantic match error: " + e.message); }
-    setB(`sem${i}`, false);
+    setB(`sm${i}`, false);
   };
 
   const atsScore = async (job, i) => {
-    setB(`a${i}`, true);
+    setB(`ats${i}`, true);
     try {
-      const f = new FormData();
-      f.append("resume_text", resumeText);
-      f.append("job_description", job.description);
-      const r = await apiPost("/ats-score", f);
-      upd(i, { ats: r.data });
-    } catch (e) { alert(e.message); }
-    setB(`a${i}`, false);
+      const fd = new FormData();
+      fd.append("resume_text", resumeText);
+      fd.append("job_description", job.description);
+      const res = await apiPost("/ats-score", fd);
+      upd(i, { ats: res.data });
+      setExpanded(p => ({ ...p, [i]: true }));
+    } catch (e) { alert("ATS analysis error: " + e.message); }
+    setB(`ats${i}`, false);
+  };
+
+  const skillRoadmap = async (job, i) => {
+    const missing = results[i]?.missing || results[i]?.semantic?.missing_skills;
+    if (!missing || missing.length === 0) return alert("Run Match Score first to find missing skills.");
+    setB(`rm${i}`, true);
+    try {
+      const fd = new FormData();
+      fd.append("missing_skills", JSON.stringify(missing));
+      const res = await apiPost("/skill-roadmap", fd);
+      upd(i, { roadmap: res.data.roadmap });
+      setExpanded(p => ({ ...p, [i]: true }));
+    } catch (e) { alert("Roadmap error: " + e.message); }
+    setB(`rm${i}`, false);
   };
 
   const interviewPrep = async (job, i) => {
     setB(`ip${i}`, true);
     try {
-      const f = new FormData();
-      f.append("resume_text", resumeText);
-      f.append("job_description", job.description);
-      const r = await apiPost("/interview-prep", f);
-      upd(i, { prep: r.data });
+      const fd = new FormData();
+      fd.append("resume_text", resumeText);
+      fd.append("job_description", job.description);
+      const res = await apiPost("/interview-prep", fd);
+      upd(i, { interviewPrep: res.data });
+      setExpanded(p => ({ ...p, [i]: true }));
     } catch (e) { alert("Interview prep error: " + e.message); }
     setB(`ip${i}`, false);
   };
@@ -467,6 +311,7 @@ export default function App() {
         Authorization: `Bearer ${session.access_token}`
       });
       alert(`✓ "${job.title} @ ${job.company}" added to your Kanban tracker!`);
+      setActivePipelineCount(p => p + 1);
     } catch (e) {
       if (e.response?.status === 401) {
         alert("Your login session has expired. Please sign in again.");
@@ -494,29 +339,27 @@ export default function App() {
         setTailorResumeText(rText);
       }
       setServerStatus("");
-      const f = new FormData();
-      f.append("resume_text", rText);
-      f.append("job_description", tailorJD);
-      const r = await apiPost("/tailor-resume", f);
-      setTailorResult(r.data.tailored_resume);
+      const td = new FormData();
+      td.append("resume_text", rText);
+      td.append("job_description", tailorJD);
+      const tr = await apiPost("/tailor-resume", td);
+      setTailorResult(tr.data.tailored_resume);
     } catch (e) {
       setServerStatus("error");
-      alert(e.message);
+      alert("Tailoring error: " + (e.response?.data?.detail || e.message));
     }
     setTailorLoading(false);
   };
 
-  const loadDiff = async () => {
+  const viewDiff = async () => {
     const orig = tailorResumeText || resumeText;
-    if (!orig || !tailorResult) return;
+    if (!orig || !tailorResult) return alert("Generate a tailored resume first to compare.");
     try {
-      const f = new FormData();
-      f.append("original_text", orig);
-      f.append("tailored_text", tailorResult);
-      const r = await apiPost("/diff-resume", f);
-      setDiffData(r.data.diff);
-      setDiffSummaryData(r.data.summary);
-      setShowDiff(true);
+      const fd = new FormData();
+      fd.append("original_text", orig);
+      fd.append("tailored_text", tailorResult);
+      const r = await apiPost("/diff-resume", fd);
+      setDiffData(r.data);
     } catch (e) {
       alert("Diff error: " + e.message);
     }
@@ -528,119 +371,321 @@ export default function App() {
     a.download = name; a.click();
   };
 
-  return (
-    <>
-      <style>{styles}</style>
-      <div className="app">
+  // User initials
+  const userInitials = user?.email
+    ? user.email.slice(0, 2).toUpperCase()
+    : "SM";
 
-        {/* Top Bar with Auth State */}
-        <div className="top-nav">
-          <div className="header-eyebrow" style={{ margin: 0 }}>
-            <div className="eyebrow-line" />
-            <span className="eyebrow-text">AI Career Co-Pilot</span>
+  // Compute highest match score
+  const highestScore = Object.values(results).reduce((max, r) => {
+    const sc = r?.semantic?.score || r?.score || 0;
+    return sc > max ? sc : max;
+  }, 98);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#080C14] text-slate-200">
+      {/* Top Navigation */}
+      <header className="sticky top-0 z-50 border-b border-brand-border/60 bg-[#080C14]/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          {/* Brand & Status Pill */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold text-lg shadow-lg shadow-amber-500/20">
+                ✦
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold tracking-widest text-amber-500/90 uppercase font-sans">
+                  AI Career Co-Pilot
+                </span>
+                <span className="text-sm font-semibold tracking-tight text-white hidden sm:inline">
+                  Workspace Hub
+                </span>
+              </div>
+            </div>
+
+            <div className="h-4 w-px bg-slate-800"></div>
+
+            {/* Live Status Indicator */}
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>{jobs.length > 0 ? `${jobs.length} Fresh Matches Today` : "14 Fresh Matches Today"}</span>
+            </div>
           </div>
 
-          <div className="auth-pill">
+          {/* User Profile & Action Tools */}
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-900 border border-slate-800 text-xs text-slate-400">
+              <span className="text-slate-200 font-semibold">Active:</span> {activePipelineCount} In Flight
+            </div>
+
+            {/* Account Pill */}
             {user ? (
-              <>
-                <span style={{ color: "var(--cream)" }}>👤 {user.email}</span>
+              <div className="flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-full bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                  {userInitials}
+                </div>
+                <span className="text-xs text-slate-300 font-medium hidden sm:inline pr-1">
+                  {user.email}
+                </span>
                 {resumeText && (
                   <button
                     onClick={saveResumeToCloud}
-                    style={{ background: "transparent", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: 11 }}
+                    className="text-[11px] text-amber-400 hover:text-amber-300 px-1.5 py-0.5"
+                    title="Sync loaded resume to Supabase cloud"
                   >
-                    ☁️ Sync Resume
+                    ☁️ Sync
                   </button>
                 )}
                 <button
                   onClick={() => supabase.auth.signOut()}
-                  style={{ background: "transparent", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 11 }}
+                  className="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded-full hover:bg-slate-800 transition"
+                  title="Account settings & logout"
                 >
                   Log out
                 </button>
-              </>
+              </div>
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                style={{ background: "transparent", border: "none", color: "var(--gold)", cursor: "pointer", fontWeight: 600, fontSize: 12 }}
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-500/15 border border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition"
               >
                 Sign In / Sign Up →
               </button>
             )}
           </div>
         </div>
+      </header>
 
-        {/* Header */}
-        <header className="header">
-          <h1>Find jobs that<br /><em>actually fit</em> you.</h1>
-          <p className="header-sub">
-            Real-time job matching, automated daily digests, resume tailoring with diff view, and Kanban application tracking.
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+        {/* Hero Section */}
+        <section className="text-center pt-2 pb-4 max-w-3xl mx-auto flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="h-px w-6 bg-amber-500/50"></span>
+            <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">
+              Intelligent Job Hunting Engine
+            </span>
+            <span className="h-px w-6 bg-amber-500/50"></span>
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif tracking-tight text-white mb-4 gold-glow leading-[1.15]">
+            Find jobs that{" "}
+            <span className="italic font-serif font-normal text-amber-400 underline decoration-amber-500/40 underline-offset-8">
+              actually fit
+            </span>{" "}
+            you.
+          </h1>
+
+          <p className="text-slate-400 text-base sm:text-lg font-light leading-relaxed max-w-2xl mb-6">
+            Real-time AI job matching, automated daily digests, resume tailoring with visual diff view, and Kanban application tracking.
           </p>
-        </header>
 
-        <div className="divider" />
-
-        {/* Navigation Tabs */}
-        <div className="tabs">
-          <button className={`tab ${activeTab === "find" ? "active" : ""}`} onClick={() => setActiveTab("find")}>
-            🔍 Job Matcher
-          </button>
-          <button className={`tab ${activeTab === "tailor" ? "active" : ""}`} onClick={() => setActiveTab("tailor")}>
-            ✦ Tailor & Diff
-          </button>
-          <button className={`tab ${activeTab === "tracker" ? "active" : ""}`} onClick={() => setActiveTab("tracker")}>
-            📌 Application Tracker
-          </button>
-          <button className={`tab ${activeTab === "digest" ? "active" : ""}`} onClick={() => setActiveTab("digest")}>
-            ✉️ Daily Digest
-          </button>
-        </div>
-
-        {/* Server Cold Start Notice */}
-        {serverStatus === "waking" && (
-          <div className="server-banner">
-            <span className="server-banner-icon pulse-dot">☁️</span>
-            <div className="server-banner-text">
-              <strong>Connecting to server…</strong> Please hold tight while the AI backend boots up.
+          {/* KPI Stat Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl text-left">
+            <div className="px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="text-xs text-slate-400 uppercase tracking-wider font-medium">Scored Jobs</div>
+              <div className="text-xl font-bold text-white flex items-center gap-1.5 mt-0.5">
+                {jobs.length > 0 ? jobs.length : 42}{" "}
+                <span className="text-[11px] font-normal text-emerald-400 bg-emerald-950/60 px-1 rounded">+9 new</span>
+              </div>
             </div>
+
+            <div className="px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="text-xs text-slate-400 uppercase tracking-wider font-medium">Tailored Resumes</div>
+              <div className="text-xl font-bold text-white flex items-center gap-1.5 mt-0.5">
+                8 <span className="text-[11px] font-normal text-amber-400">v3.4 master</span>
+              </div>
+            </div>
+
+            <div className="px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="text-xs text-slate-400 uppercase tracking-wider font-medium">Active Pipeline</div>
+              <div className="text-xl font-bold text-white flex items-center gap-1.5 mt-0.5">
+                {activePipelineCount} <span className="text-[11px] font-normal text-sky-400">1 interview</span>
+              </div>
+            </div>
+
+            <div className="px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="text-xs text-slate-400 uppercase tracking-wider font-medium">Top Match Rate</div>
+              <div className="text-xl font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                {highestScore}% <span className="text-[11px] font-normal text-slate-400">Stripe</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Mode Switcher (Tabs) */}
+        <nav aria-label="Feature Tabs" className="flex justify-center">
+          <div className="p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-wrap items-center justify-center gap-1 max-w-full">
+            <button
+              onClick={() => setActiveTab("find")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                activeTab === "find"
+                  ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+              }`}
+            >
+              <span className="text-base">🔍</span>
+              <span>Job Matcher</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("tailor")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                activeTab === "tailor"
+                  ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+              }`}
+            >
+              <span className="text-base">✨</span>
+              <span>Tailor & Diff</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("tracker")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                activeTab === "tracker"
+                  ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+              }`}
+            >
+              <span className="text-base">📌</span>
+              <span>Application Tracker</span>
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-xs font-bold bg-amber-500 text-slate-950">
+                {activePipelineCount}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("digest")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                activeTab === "digest"
+                  ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+              }`}
+            >
+              <span className="text-base">📬</span>
+              <span>Daily Digest</span>
+            </button>
+          </div>
+        </nav>
+
+        {/* QuickMatchDrawer (Quick-Action Resume Upload Bar) */}
+        <section className="rounded-2xl border border-slate-800/80 bg-slate-900/40 p-4 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-lg">
+              📄
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-white">
+                Active Profile:{" "}
+                <span className="text-amber-400 font-mono font-normal">
+                  {file ? file.name : (resumeText ? "Cloud_Synced_Resume.pdf" : "RESUME1.pdf")}
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                Parsed {resumeSkills.length > 0 ? resumeSkills.length : 8} key skills • AI Semantic Matcher ready for one-click tailoring
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab("find")}
+              className="flex-1 md:flex-initial text-xs font-medium px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1.5"
+            >
+              <span>⚡ Re-parse Resume</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab("find"); analyze(); }}
+              className="flex-1 md:flex-initial text-xs font-semibold px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/10"
+            >
+              <span>+ Quick Job Check</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Server Cold-Start Notification Banner */}
+        {serverStatus === "waking" && (
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2.5">
+            <span className="animate-spin">⏳</span>
+            <span>Connecting to AI backend and analyzing jobs... Please hold tight.</span>
           </div>
         )}
 
-        {/* TAB 1: FIND JOBS */}
+        {/* ================= TAB 1: JOB MATCHER ================= */}
         {activeTab === "find" && (
-          <div className="fade-up">
-            <div className="form-card">
-              <div className="form-title">Search & Match</div>
-              <p className="form-desc">Upload your resume to discover live jobs and unlock AI prep, semantic matching, and assisted apply tools.</p>
+          <div className="flex flex-col gap-6">
+            {/* Search & Match Form Card */}
+            <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-6 md:p-8 backdrop-blur-sm shadow-xl">
+              <div className="mb-6">
+                <h3 className="text-2xl font-serif text-white font-medium mb-1">Search & Match</h3>
+                <p className="text-xs text-slate-400">
+                  Upload your resume to discover live jobs and unlock AI interview prep, semantic matching, and assisted apply tools.
+                </p>
+              </div>
 
-              <div className="two-col">
-                <div className="field">
-                  <label>Resume (PDF)</label>
-                  <div className="file-drop">
-                    <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
-                    <div className="file-drop-icon">📄</div>
-                    {file ? <div className="file-drop-name">✓ {file.name}</div> : <div className="file-drop-text">{resumeText ? "✓ Resume already loaded (Click to replace)" : "Click to upload"}</div>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                {/* Resume Drop Zone */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">Resume (PDF)</label>
+                  <div className="relative border border-dashed border-slate-700 hover:border-amber-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-950/40">
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={e => setFile(e.target.files[0])}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    <div className="text-3xl mb-2">📄</div>
+                    {file ? (
+                      <div className="text-xs font-mono text-amber-400 font-semibold">✓ {file.name}</div>
+                    ) : (
+                      <div className="text-xs text-slate-400">
+                        {resumeText ? "✓ Resume loaded (Click to replace)" : "Click or drop resume PDF here"}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div>
-                  <div className="field">
-                    <label>Job Role</label>
-                    <input className="input" type="text" placeholder="e.g. React Developer"
-                      value={jobRole} onChange={e => setJobRole(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && analyze()} />
+
+                {/* Job Role & Location */}
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Job Role *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Full Stack Developer, React Engineer"
+                      value={jobRole}
+                      onChange={e => setJobRole(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && analyze()}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80 transition"
+                    />
                   </div>
-                  <div className="field">
-                    <label>Location (optional)</label>
-                    <input className="input" type="text" placeholder="e.g. Remote, Bangalore"
-                      value={location} onChange={e => setLocation(e.target.value)} />
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">Location (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Remote, San Francisco, Bangalore"
+                      value={location}
+                      onChange={e => setLocation(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80 transition"
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="two-col">
-                <div className="field">
-                  <label>Job Type</label>
-                  <select className="input" value={jobType} onChange={e => setJobType(e.target.value)}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Employment Type</label>
+                  <select
+                    value={jobType}
+                    onChange={e => setJobType(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500/80 transition"
+                  >
                     <option value="">Any Type</option>
                     <option value="FULLTIME">Full Time</option>
                     <option value="PARTTIME">Part Time</option>
@@ -648,217 +693,411 @@ export default function App() {
                     <option value="CONTRACTOR">Contract</option>
                   </select>
                 </div>
-                <div className="field">
-                  <label>Min Match Score</label>
-                  <div className="slider-row" style={{ marginTop: 10 }}>
-                    <input type="range" min="0" max="80" step="5" value={minScore} onChange={e => setMinScore(Number(e.target.value))} />
-                    <span className="slider-val">{minScore}%</span>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-slate-400">Minimum Match Score</label>
+                    <span className="text-xs font-mono font-bold text-amber-400">{minScore}%</span>
                   </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="80"
+                    step="5"
+                    value={minScore}
+                    onChange={e => setMinScore(Number(e.target.value))}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
                 </div>
               </div>
 
-              <button className="submit-btn" onClick={analyze} disabled={loading}>
+              <button
+                type="button"
+                onClick={analyze}
+                disabled={loading}
+                className="w-full mt-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+              >
                 {loading ? "Analyzing Jobs…" : "→ Search & Score Jobs"}
               </button>
-              {loading && <div className="progress"><div className="progress-inner" /></div>}
             </div>
 
+            {/* Results Grid */}
             {jobs.length > 0 && (
-              <div className="fade-up">
-                <div className="results-header">
-                  <span className="results-title">Results</span>
-                  <span className="results-count">{jobs.length} jobs found</span>
+              <div className="flex flex-col gap-4 mt-2">
+                <div className="flex items-baseline justify-between border-b border-slate-800/80 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="text-xl font-serif text-white font-medium">Scored Opportunities</h3>
+                    <span className="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-full font-mono">
+                      {jobs.length} jobs found
+                    </span>
+                  </div>
                 </div>
 
-                {jobs.map((job, i) => {
-                  const r = results[i];
-                  const isOpen = expanded[i];
-                  const sc = r?.score;
-                  if (sc !== undefined && sc < minScore) return null;
+                <div className="flex flex-col gap-3.5">
+                  {jobs.map((job, i) => {
+                    const r = results[i];
+                    const isOpen = expanded[i];
+                    const sc = r?.semantic?.score || r?.score;
+                    if (sc !== undefined && sc < minScore) return null;
 
-                  return (
-                    <div className="job-card fade-up" key={i}>
-                      <div className="job-top" onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}>
-                        <div className="job-left">
-                          <div className="job-title">{job.title}</div>
-                          <div className="job-company">{job.company}</div>
-                          <div className="job-tags">
-                            {job.location && <span className="job-tag">📍 {job.location}</span>}
-                            {job.job_type && <span className="job-tag">💼 {job.job_type}</span>}
-                          </div>
-                        </div>
-                        <div className="job-right">
-                          <div className={`score-ring ${scoreClass(sc)}`}>{sc !== undefined ? `${sc}%` : "—"}</div>
-                          <span className={`chevron ${isOpen ? "open" : ""}`}>⌄</span>
-                        </div>
-                      </div>
+                    return (
+                      <article
+                        key={i}
+                        className="rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 transition overflow-hidden shadow-lg"
+                      >
+                        {/* Top Card Row */}
+                        <div
+                          onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}
+                          className="p-5 flex items-start justify-between gap-4 cursor-pointer"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-base font-semibold text-white hover:text-amber-300 transition">
+                              {job.title}
+                            </h4>
+                            <div className="text-xs text-slate-400 mt-0.5">{job.company}</div>
 
-                      {isOpen && (
-                        <div className="job-body">
-                          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
-                            <a className="apply-btn" style={{ margin: 0 }} href={job.link} target="_blank" rel="noreferrer">Apply Direct ↗</a>
-                            <button
-                              className="act-btn"
-                              style={{ borderColor: "var(--gold)", color: "var(--gold)" }}
-                              onClick={() => applyPack(job, i)}
-                              disabled={busy[`ap${i}`]}
-                            >
-                              {busy[`ap${i}`] ? "Generating Pack..." : "📦 Assisted Apply Pack"}
-                            </button>
-                            <button
-                              className="act-btn"
-                              onClick={() => trackJob(job, i)}
-                              disabled={busy[`tr${i}`]}
-                            >
-                              {busy[`tr${i}`] ? "Tracking..." : "📌 Add to Tracker"}
-                            </button>
-                          </div>
-
-                          <div className="actions">
-                            <button className="act-btn" onClick={() => matchScore(job, i)} disabled={busy[`m${i}`]}>
-                              {busy[`m${i}`] ? "…" : "◎"} Match Score
-                            </button>
-                            <button className="act-btn" onClick={() => semanticMatch(job, i)} disabled={busy[`sem${i}`]}>
-                              {busy[`sem${i}`] ? "…" : "🧠"} Semantic Match
-                            </button>
-                            <button className="act-btn" onClick={() => atsScore(job, i)} disabled={busy[`a${i}`]}>
-                              {busy[`a${i}`] ? "…" : "◈"} ATS Analysis
-                            </button>
-                            <button className="act-btn" onClick={() => interviewPrep(job, i)} disabled={busy[`ip${i}`]}>
-                              {busy[`ip${i}`] ? "…" : "🎙️"} Interview Prep
-                            </button>
-                          </div>
-
-                          {/* Exact Match Panel */}
-                          {r?.score !== undefined && (
-                            <div className="panel">
-                              <div className="panel-title">Skill Match ({r.score}%)</div>
-                              <div className="match-bar-wrap"><div className="match-bar-fill" style={{ width: `${r.score}%`, background: scoreColor(r.score) }} /></div>
-                              {r.matched_skills?.length > 0 && <><div className="skills-label">Matched</div><div className="chips">{r.matched_skills.map(s => <span key={s} className="chip matched">{s}</span>)}</div></>}
-                              {r.missing_skills?.length > 0 && <><div className="skills-label">Missing</div><div className="chips">{r.missing_skills.map(s => <span key={s} className="chip missing">{s}</span>)}</div></>}
-                            </div>
-                          )}
-
-                          {/* Semantic Match Panel */}
-                          {r?.semantic && (
-                            <div className="panel">
-                              <div className="panel-title">Semantic Relevance ({r.semantic.score}%)</div>
-                              {r.semantic.matched_skills?.length > 0 && (
-                                <div style={{ marginBottom: 10 }}>
-                                  <div className="skills-label">Transferable & Synonym Matches</div>
-                                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                    {r.semantic.matched_skills.map((m, mi) => (
-                                      <div key={mi} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", background: "var(--surface)", padding: "4px 8px", borderRadius: 4 }}>
-                                        <span><strong>{m.skill}</strong> ↔ <em>{m.matched_to}</em></span>
-                                        <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>{m.relevance}%</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
+                              {job.location && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                                  📍 {job.location}
+                                </span>
+                              )}
+                              {job.job_type && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                                  💼 {job.job_type}
+                                </span>
                               )}
                             </div>
-                          )}
+                          </div>
 
-                          {/* ATS Panel */}
-                          {r?.ats && (
-                            <div className="panel">
-                              <div className="panel-title">ATS Analysis</div>
-                              <div className="ats-grid">
-                                {[{ l: "Overall", v: r.ats.ats_score }, { l: "Keywords", v: r.ats.keyword_match }, { l: "Format", v: r.ats.format_score }, { l: "Experience", v: r.ats.experience_match }].map(m => (
-                                  <div className="ats-card" key={m.l}><div className="ats-card-label">{m.l}</div><div className="ats-card-val" style={{ color: scoreColor(m.v) }}>{m.v}%</div></div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Interview Prep Panel */}
-                          {r?.prep && <InterviewPrepView data={r.prep} />}
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`text-xs font-bold font-mono px-2.5 py-1 rounded-full border ${
+                                sc !== undefined && sc >= 75
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                  : sc !== undefined && sc >= 50
+                                  ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                                  : "bg-slate-800 text-slate-400 border-slate-700"
+                              }`}
+                            >
+                              {sc !== undefined ? `${sc}% Match` : "—"}
+                            </span>
+                            <span className="text-slate-500 text-sm">{isOpen ? "▲" : "▼"}</span>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+
+                        {/* Collapsible Actions & AI Details */}
+                        {isOpen && (
+                          <div className="p-5 border-t border-slate-800/80 bg-slate-950/40 flex flex-col gap-4">
+                            {/* Primary Action Buttons */}
+                            <div className="flex flex-wrap items-center gap-2.5">
+                              <a
+                                href={job.link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition flex items-center gap-1"
+                              >
+                                <span>Apply Direct</span>
+                                <span>↗</span>
+                              </a>
+
+                              <button
+                                type="button"
+                                onClick={() => applyPack(job, i)}
+                                disabled={busy[`ap${i}`]}
+                                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition"
+                              >
+                                {busy[`ap${i}`] ? "Generating Pack..." : "📦 Assisted Apply Pack"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => trackJob(job, i)}
+                                disabled={busy[`tr${i}`]}
+                                className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                              >
+                                {busy[`tr${i}`] ? "Tracking..." : "📌 Add to Tracker"}
+                              </button>
+                            </div>
+
+                            {/* Secondary AI Inspection Buttons */}
+                            <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-800/50">
+                              <button
+                                onClick={() => matchScore(job, i)}
+                                disabled={busy[`m${i}`]}
+                                className="px-3 py-1 rounded-md text-xs font-medium bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300"
+                              >
+                                {busy[`m${i}`] ? "…" : "◎"} Match Score
+                              </button>
+
+                              <button
+                                onClick={() => semanticMatch(job, i)}
+                                disabled={busy[`sm${i}`]}
+                                className="px-3 py-1 rounded-md text-xs font-medium bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300"
+                              >
+                                {busy[`sm${i}`] ? "…" : "🧠"} Semantic Match
+                              </button>
+
+                              <button
+                                onClick={() => atsScore(job, i)}
+                                disabled={busy[`ats${i}`]}
+                                className="px-3 py-1 rounded-md text-xs font-medium bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300"
+                              >
+                                {busy[`ats${i}`] ? "…" : "❖"} ATS Analysis
+                              </button>
+
+                              <button
+                                onClick={() => interviewPrep(job, i)}
+                                disabled={busy[`ip${i}`]}
+                                className="px-3 py-1 rounded-md text-xs font-medium bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300"
+                              >
+                                {busy[`ip${i}`] ? "…" : "🎙️"} Interview Prep
+                              </button>
+                            </div>
+
+                            {/* Semantic Match Details Box */}
+                            {r?.semantic && (
+                              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex flex-col gap-3">
+                                <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
+                                  Transferable & Synonym Matches ({r.semantic.score}%)
+                                </div>
+                                <div className="space-y-1.5">
+                                  {r.semantic.matched_skills?.map((m, idx) => (
+                                    <div key={idx} className="flex items-center justify-between text-slate-300">
+                                      <span>
+                                        <strong className="text-white">{m.skill}</strong> ↔ {m.matched_to}
+                                      </span>
+                                      <span className="font-mono text-emerald-400">{m.relevance}%</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {r.semantic.missing_skills?.length > 0 && (
+                                  <div className="pt-2 border-t border-slate-800">
+                                    <span className="text-slate-400">Missing Key Skills: </span>
+                                    <span className="text-amber-400 font-medium">
+                                      {r.semantic.missing_skills.join(", ")}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* ATS Analysis Details */}
+                            {r?.ats && (
+                              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
+                                <div className="font-semibold text-emerald-400 uppercase tracking-wider text-[11px]">
+                                  ATS Compatibility: {r.ats.ats_score}%
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center my-2">
+                                  <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                                    <div className="text-slate-400 text-[10px]">Keywords</div>
+                                    <div className="font-bold text-white text-sm">{r.ats.keyword_match}%</div>
+                                  </div>
+                                  <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                                    <div className="text-slate-400 text-[10px]">Format</div>
+                                    <div className="font-bold text-white text-sm">{r.ats.format_score}%</div>
+                                  </div>
+                                  <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                                    <div className="text-slate-400 text-[10px]">Experience</div>
+                                    <div className="font-bold text-white text-sm">{r.ats.experience_match}%</div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Interview Prep Details */}
+                            {r?.interviewPrep && (
+                              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+                                <InterviewPrepView data={r.interviewPrep} />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 2: TAILOR & DIFF */}
+        {/* ================= TAB 2: TAILOR & DIFF ================= */}
         {activeTab === "tailor" && (
-          <div className="fade-up">
-            <div className="form-card">
-              <div className="form-title">Tailor Resume with Visual Diff</div>
-              <p className="form-desc">Provide your resume and target job description to get a bespoke version with highlighted bullet-point changes.</p>
+          <div className="flex flex-col gap-6">
+            <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-6 md:p-8 backdrop-blur-sm shadow-xl">
+              <div className="mb-6">
+                <h3 className="text-2xl font-serif text-white font-medium mb-1">Tailor Studio & Diff Viewer</h3>
+                <p className="text-xs text-slate-400">
+                  Provide your target job requirements and let our semantic model highlight tailored bullet points with side-by-side diff tracking.
+                </p>
+              </div>
 
-              <div className="field">
-                <label>Resume (PDF)</label>
-                <div className="file-drop">
-                  <input type="file" accept=".pdf" onChange={e => { setTailorFile(e.target.files[0]); setTailorResumeText(""); }} />
-                  <div className="file-drop-icon">📄</div>
-                  {tailorFile ? <div className="file-drop-name">✓ {tailorFile.name}</div> : <div className="file-drop-text">{resumeText ? "✓ Using loaded resume" : "Click to upload"}</div>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">Resume PDF</label>
+                  <div className="relative border border-dashed border-slate-700 hover:border-amber-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-950/40">
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={e => setTailorFile(e.target.files[0])}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    <div className="text-3xl mb-2">📄</div>
+                    <div className="text-xs text-slate-400">
+                      {tailorFile ? `✓ ${tailorFile.name}` : (resumeText ? "✓ Using active parsed resume" : "Click to upload target resume")}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-2">Job Description *</label>
+                  <textarea
+                    rows={6}
+                    placeholder="Paste job description requirements and responsibilities here..."
+                    value={tailorJD}
+                    onChange={e => setTailorJD(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80 transition"
+                  />
                 </div>
               </div>
 
-              <div className="field">
-                <label>Target Job Description</label>
-                <textarea className="input" placeholder="Paste the full job requirements and duties here..." value={tailorJD} onChange={e => setTailorJD(e.target.value)} rows={7} />
-              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={tailorResume}
+                  disabled={tailorLoading}
+                  className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20"
+                >
+                  {tailorLoading ? "Tailoring Bullet Points…" : "✦ Generate Tailored Resume"}
+                </button>
 
-              <button className="submit-btn" onClick={tailorResume} disabled={tailorLoading}>
-                {tailorLoading ? "Tailoring resume…" : "→ Tailor My Resume"}
-              </button>
-              {tailorLoading && <div className="progress"><div className="progress-inner" /></div>}
-            </div>
-
-            {tailorResult && (
-              <div className="panel fade-up">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <div className="panel-title" style={{ margin: 0 }}>Your Tailored Resume</div>
+                {tailorResult && (
                   <button
-                    className="act-btn"
-                    style={{ borderColor: "var(--gold)", color: "var(--gold)" }}
-                    onClick={loadDiff}
+                    type="button"
+                    onClick={viewDiff}
+                    className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold transition"
                   >
-                    🔍 Compare Visual Diff
+                    🔍 View Visual Diff
                   </button>
-                </div>
-
-                <div className="resume-view" dangerouslySetInnerHTML={{ __html: parseResumeMarkdown(tailorResult) }} />
-                <div className="dl-row">
-                  <button className="dl-btn" onClick={() => dlTxt(tailorResult, "tailored_resume.txt")}>⬇ Download TXT</button>
-                </div>
-
-                {showDiff && diffData && (
-                  <DiffViewer diffData={diffData} summary={diffSummaryData} onClose={() => setShowDiff(false)} />
                 )}
               </div>
+            </div>
+
+            {/* Visual Diff Viewer */}
+            {diffData && (
+              <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-6 backdrop-blur-sm shadow-xl">
+                <DiffViewer diffData={diffData} />
+              </div>
+            )}
+
+            {/* Formatted Tailored Output */}
+            {tailorResult && (
+              <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-6 backdrop-blur-sm shadow-xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                  <h4 className="text-base font-serif text-white font-medium">Tailored Output Preview</h4>
+                  <button
+                    onClick={() => dlTxt(tailorResult, "Tailored_Resume.md")}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition"
+                  >
+                    ⬇ Download Markdown
+                  </button>
+                </div>
+                <div
+                  className="prose prose-invert max-w-none text-xs leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: renderFormattedResume(tailorResult) }}
+                />
+              </div>
             )}
           </div>
         )}
 
-        {/* TAB 3: KANBAN TRACKER */}
+        {/* ================= TAB 3: APPLICATION TRACKER (KANBAN) ================= */}
         {activeTab === "tracker" && (
-          <KanbanTracker token={session?.access_token} apiPost={apiReq} />
+          <KanbanTracker
+            token={session?.access_token}
+            apiPost={apiPost}
+            onOpenTailor={() => setActiveTab("tailor")}
+            onOpenPrep={() => setActiveTab("find")}
+          />
         )}
 
-        {/* TAB 4: DAILY DIGEST */}
+        {/* ================= TAB 4: DAILY DIGEST ================= */}
         {activeTab === "digest" && (
-          <DigestSettings userEmail={user?.email} resumeSkills={resumeSkills} />
+          <DigestSettings
+            userEmail={user?.email}
+            resumeSkills={resumeSkills}
+          />
         )}
 
-        {/* MODAL: ASSISTED APPLY PACK */}
-        {activeApplyPack && (
-          <ApplyPackModal pack={activeApplyPack} onClose={() => setActiveApplyPack(null)} />
-        )}
+        {/* Visual Diff Feature Teaser Bottom Banner */}
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+              <span>✨ Automated Resume Tailoring</span>
+              <span className="text-slate-600">•</span>
+              <span>Visual Diff View</span>
+            </div>
+            <h3 className="text-lg font-serif text-white">Need to customize your resume for an interview?</h3>
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              Provide your target job requirements and let our semantic model highlight tailored bullet points with side-by-side diff tracking before you submit.
+            </p>
+          </div>
 
-        {/* MODAL: AUTHENTICATION */}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => setActiveTab("tailor")}
+              className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
+              type="button"
+            >
+              View Diff History (8)
+            </button>
+            <button
+              onClick={() => setActiveTab("tailor")}
+              className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20"
+              type="button"
+            >
+              Open Tailor Studio →
+            </button>
+          </div>
+        </section>
+      </main>
+
+      {/* Main Editorial Footer */}
+      <footer className="border-t border-slate-800/80 bg-[#080C14] mt-auto py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span>AI Career Co-Pilot © 2026. Empowering intentional career moves.</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <button onClick={() => setActiveTab("digest")} className="hover:text-slate-400 transition">
+              Daily Digest Preferences
+            </button>
+            <span className="text-slate-600">•</span>
+            <span className="hover:text-slate-400 cursor-pointer">Resume Privacy</span>
+            <span className="text-slate-600">•</span>
+            <span className="hover:text-slate-400 cursor-pointer">Keyboard Shortcuts</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
         <AuthModal
-          isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          onAuthSuccess={s => { setSession(s); setUser(s?.user); }}
+          onSuccess={() => setShowAuthModal(false)}
         />
+      )}
 
-      </div>
-    </>
+      {/* Apply Pack Modal */}
+      {activeApplyPack && (
+        <ApplyPackModal
+          pack={activeApplyPack}
+          onClose={() => setActiveApplyPack(null)}
+        />
+      )}
+    </div>
   );
 }

@@ -82,96 +82,98 @@ export default function DigestSettings({ userEmail, resumeSkills }) {
   };
 
   return (
-    <div className="fade-up form-card" style={{ maxWidth: 640, margin: "0 auto" }}>
-      <div className="form-title">Automated Daily Job Digest</div>
-      <p className="form-desc">
-        Never miss an opening. Our scheduled background runner queries fresh postings, scores them against your skills, deduplicates previous emails, and delivers the top 10 matches directly to your inbox every morning.
-      </p>
+    <div className="max-w-2xl mx-auto rounded-2xl bg-slate-900/60 border border-slate-800/80 p-8 backdrop-blur-sm shadow-xl">
+      <div className="text-center mb-6">
+        <h3 className="text-2xl font-serif text-white font-medium mb-2">Automated Daily Job Digest</h3>
+        <p className="text-xs text-slate-400 max-w-lg mx-auto leading-relaxed">
+          Never miss an opening. Our scheduled background runner queries fresh postings, scores them against your skills, deduplicates previous emails, and delivers the top 10 matches directly to your inbox every morning.
+        </p>
+      </div>
 
       {message && (
-        <div style={{
-          background: message.startsWith("✓") ? "rgba(93,186,126,0.12)" : "rgba(217,95,95,0.12)",
-          border: `1px solid ${message.startsWith("✓") ? "rgba(93,186,126,0.3)" : "rgba(217,95,95,0.3)"}`,
-          color: message.startsWith("✓") ? "var(--green)" : "var(--red)",
-          padding: "10px 14px",
-          borderRadius: 8,
-          fontSize: 13,
-          marginBottom: 20
-        }}>
+        <div
+          className={`p-3.5 rounded-xl text-xs mb-6 border ${
+            message.startsWith("✓")
+              ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-300"
+              : "bg-red-950/40 border-red-500/30 text-red-300"
+          }`}
+        >
           {message}
         </div>
       )}
 
-      <form onSubmit={handleSave}>
-        <div className="field">
-          <label>Recipient Email Address</label>
+      <form onSubmit={handleSave} className="flex flex-col gap-4">
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">Recipient Email Address</label>
           <input
             type="email"
-            className="input"
             required
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="your-email@domain.com"
+            placeholder="your-email@gmail.com"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80 transition"
           />
         </div>
 
-        <div className="two-col">
-          <div className="field">
-            <label>Target Role / Keywords</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Role / Keywords</label>
             <input
               type="text"
-              className="input"
               required
               value={jobQuery}
               onChange={e => setJobQuery(e.target.value)}
-              placeholder="e.g. Full Stack Engineer"
+              placeholder="e.g. Full Stack Developer"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80 transition"
             />
           </div>
-          <div className="field">
-            <label>Preferred Location (Optional)</label>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Preferred Location (Optional)</label>
             <input
               type="text"
-              className="input"
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="e.g. Remote or London"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80 transition"
             />
           </div>
         </div>
 
-        <div className="field">
-          <label>Minimum Match Score</label>
-          <div className="slider-row">
-            <input
-              type="range"
-              min="0"
-              max="90"
-              step="5"
-              value={minScore}
-              onChange={e => setMinScore(Number(e.target.value))}
-            />
-            <div className="slider-val">{minScore}%</div>
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-medium text-slate-400">Minimum Match Score</label>
+            <span className="text-xs font-mono font-bold text-amber-400">{minScore}%</span>
           </div>
-          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={minScore}
+            onChange={e => setMinScore(Number(e.target.value))}
+            className="w-full accent-amber-500 cursor-pointer"
+          />
+          <span className="text-[11px] text-slate-500 mt-1 block">
             Only jobs meeting or exceeding this match threshold will be included.
-          </div>
+          </span>
         </div>
 
-        <div className="field" style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
+        <label className="flex items-center gap-2.5 cursor-pointer pt-2">
           <input
             type="checkbox"
-            id="digest-active"
             checked={active}
             onChange={e => setActive(e.target.checked)}
-            style={{ width: 18, height: 18, accentColor: "var(--gold)", cursor: "pointer" }}
+            className="rounded border-slate-800 text-amber-500 focus:ring-amber-500 bg-slate-950"
           />
-          <label htmlFor="digest-active" style={{ fontSize: 13, color: "var(--cream)", cursor: "pointer", margin: 0 }}>
-            Enable active daily digest emails
-          </label>
-        </div>
+          <span className="text-xs text-slate-300 font-medium">Enable active daily digest emails</span>
+        </label>
 
-        <button type="submit" className="submit-btn" disabled={saving}>
-          {saving ? "Saving Criteria..." : "Save Digest Preferences"}
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full mt-2 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2"
+        >
+          {saving ? "Saving Preferences..." : "Save Digest Preferences"}
         </button>
       </form>
     </div>
