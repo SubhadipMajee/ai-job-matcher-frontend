@@ -105,7 +105,7 @@ export default function App() {
   const [location, setLocation] = useState("");
   const [jobType, setJobType] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
-  const [minScore, setMinScore] = useState(0);
+  const [minScore, setMinScore] = useState(40);
   const [loading, setLoading] = useState(false);
   const [resumeText, setResumeText] = useState("");
   const [resumeSkills, setResumeSkills] = useState([]);
@@ -113,6 +113,8 @@ export default function App() {
   const [results, setResults] = useState({});
   const [expanded, setExpanded] = useState({});
   const [busy, setBusy] = useState({});
+  const [actionErrors, setActionErrors] = useState({});
+  const [cardTab, setCardTab] = useState({});
 
   // Tailor & Diff State
   const [tailorFile, setTailorFile] = useState(null);
@@ -129,6 +131,8 @@ export default function App() {
 
   const setB = (k, v) => setBusy(p => ({ ...p, [k]: v }));
   const upd = (i, data) => setResults(p => ({ ...p, [i]: { ...p[i], ...data } }));
+  const setErr = (k, msg) => setActionErrors(p => ({ ...p, [k]: msg }));
+  const clearErr = (k) => setActionErrors(p => { const next = { ...p }; delete next[k]; return next; });
 
   // Load Auth Session
   useEffect(() => {
@@ -199,7 +203,7 @@ export default function App() {
         const fd = new FormData(); fd.append("file", file);
         const pr = await apiPost("/parse-resume", fd);
         rText = pr.data.resume_text;
-        rSkills = pr.data.resume_skills;
+        rSkills = pr.data.resume_skills || [];
         setResumeText(rText);
         setResumeSkills(rSkills);
       }
@@ -210,8 +214,25 @@ export default function App() {
       jf.append("location", location);
       jf.append("job_type", jobType);
       jf.append("experience_level", experienceLevel);
+      jf.append("resume_skills", JSON.stringify(rSkills || []));
       const jr = await apiPost("/fetch-jobs", jf);
-      setJobs(jr.data.jobs || []);
+      const rawJobs = jr.data.jobs || [];
+
+      // P0 #3: Sort results by score descending
+      const sortedJobs = [...rawJobs].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      setJobs(sortedJobs);
+
+      // P0 #1: Immediately populate score and skill overlap for every job
+      const initResults = {};
+      sortedJobs.forEach((j, i) => {
+        initResults[i] = {
+          score: j.score,
+          matched_skills: j.matched_skills || [],
+          missing: j.missing_skills || [],
+          missing_skills: j.missing_skills || [],
+        };
+      });
+      setResults(initResults);
     } catch (e) {
       setServerStatus("error");
       alert("Error: " + (e.response?.data?.detail || e.message));
@@ -221,9 +242,10 @@ export default function App() {
 
   const matchScore = async (job, i) => {
     setB(`m${i}`, true);
+    clearErr(`m${i}`);
     try {
       if (!resumeSkills || resumeSkills.length === 0) {
-        alert("Please upload and parse your resume first to extract skills.");
+        setErr(`m${i}`, "Upload and parse your resume first to extract skills.");
         setB(`m${i}`, false);
         return;
       }
@@ -251,13 +273,14 @@ export default function App() {
       });
       setExpanded(p => ({ ...p, [i]: true }));
     } catch (e) {
-      alert("Match score error: " + (e.response?.data?.detail || e.message));
+      setErr(`m${i}`, e.response?.data?.detail || e.message);
     }
     setB(`m${i}`, false);
   };
 
   const semanticMatch = async (job, i) => {
     setB(`sm${i}`, true);
+    clearErr(`sm${i}`);
     try {
       const fd = new FormData();
       fd.append("resume_skills", JSON.stringify(resumeSkills));
@@ -266,12 +289,15 @@ export default function App() {
       const res = await apiPost("/semantic-match", fd);
       upd(i, { semantic: res.data });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("Semantic match error: " + (e.response?.data?.detail || e.message)); }
+    } catch (e) {
+      setErr(`sm${i}`, e.response?.data?.detail || e.message);
+    }
     setB(`sm${i}`, false);
   };
 
   const atsScore = async (job, i) => {
     setB(`ats${i}`, true);
+    clearErr(`ats${i}`);
     try {
       const fd = new FormData();
       fd.append("resume_text", resumeText);
@@ -279,26 +305,35 @@ export default function App() {
       const res = await apiPost("/ats-score", fd);
       upd(i, { ats: res.data });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("ATS analysis error: " + (e.response?.data?.detail || e.message)); }
+    } catch (e) {
+      setErr(`ats${i}`, e.response?.data?.detail || e.message);
+    }
     setB(`ats${i}`, false);
   };
 
   const skillRoadmap = async (job, i) => {
     const missing = results[i]?.missing || results[i]?.semantic?.missing_skills;
-    if (!missing || missing.length === 0) return alert("Run Match Score first to find missing skills.");
+    if (!missing || missing.length === 0) {
+      setErr(`rm${i}`, "No missing skills identified to build a roadmap.");
+      return;
+    }
     setB(`rm${i}`, true);
+    clearErr(`rm${i}`);
     try {
       const fd = new FormData();
       fd.append("missing_skills", JSON.stringify(missing));
       const res = await apiPost("/skill-roadmap", fd);
       upd(i, { roadmap: res.data.roadmap });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("Roadmap error: " + (e.response?.data?.detail || e.message)); }
+    } catch (e) {
+      setErr(`rm${i}`, e.response?.data?.detail || e.message);
+    }
     setB(`rm${i}`, false);
   };
 
   const interviewPrep = async (job, i) => {
     setB(`ip${i}`, true);
+    clearErr(`ip${i}`);
     try {
       const fd = new FormData();
       fd.append("resume_text", resumeText);
@@ -306,12 +341,15 @@ export default function App() {
       const res = await apiPost("/interview-prep", fd);
       upd(i, { interviewPrep: res.data });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("Interview prep error: " + (e.response?.data?.detail || e.message)); }
+    } catch (e) {
+      setErr(`ip${i}`, e.response?.data?.detail || e.message);
+    }
     setB(`ip${i}`, false);
   };
 
   const applyPack = async (job, i) => {
     setB(`ap${i}`, true);
+    clearErr(`ap${i}`);
     try {
       const f = new FormData();
       f.append("resume_text", resumeText);
@@ -321,7 +359,9 @@ export default function App() {
       f.append("link", job.link || "");
       const r = await apiPost("/apply-pack", f);
       setActiveApplyPack(r.data);
-    } catch (e) { alert("Apply pack error: " + (e.response?.data?.detail || e.message)); }
+    } catch (e) {
+      setErr(`ap${i}`, e.response?.data?.detail || e.message);
+    }
     setB(`ap${i}`, false);
   };
 
@@ -407,11 +447,11 @@ export default function App() {
     ? user.email.slice(0, 2).toUpperCase()
     : "SM";
 
-  // Compute highest match score
-  const highestScore = Object.values(results).reduce((max, r) => {
-    const sc = r?.semantic?.score || r?.score || 0;
-    return sc > max ? sc : max;
-  }, 98);
+  // Compute highest match score dynamically from results
+  const validScores = Object.values(results)
+    .map(r => r?.semantic?.score ?? r?.score)
+    .filter(s => typeof s === "number" && !isNaN(s) && s > 0);
+  const highestScore = validScores.length > 0 ? Math.max(...validScores) : 0;
 
   return (
     <div className="app-shell text-slate-200">
@@ -439,9 +479,9 @@ export default function App() {
         </div>
 
         {/* Center search hint */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-slate-500 text-xs select-none">
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-slate-400 text-xs select-none">
           <span>🔍</span><span>Search jobs…</span>
-          <kbd className="ml-2 px-1.5 py-0.5 rounded bg-brand-border text-[10px] text-slate-400">⌘K</kbd>
+          <kbd className="ml-2 px-1.5 py-0.5 rounded bg-brand-border text-[10px] text-slate-300">⌘K</kbd>
         </div>
 
         {/* Right */}
@@ -450,11 +490,11 @@ export default function App() {
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-surface border border-brand-border text-[11px]">
               <span className="text-slate-400">Pipeline</span>
               <span className="text-white font-bold">{activePipelineCount}</span>
-              <span className="text-sky-400 font-medium">in flight</span>
+              <span className="text-sky-400 font-medium">{user ? "in flight" : "demo"}</span>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-surface border border-brand-border text-[11px]">
               <span className="text-slate-400">Top</span>
-              <span className="text-emerald-400 font-bold">{highestScore}%</span>
+              <span className="text-emerald-400 font-bold">{highestScore > 0 ? `${highestScore}%` : "—"}</span>
             </div>
           </div>
           <div className="h-5 w-px bg-brand-border" />
@@ -473,7 +513,7 @@ export default function App() {
                 )}
                 <span className="hidden md:inline text-[11px] text-slate-300 font-medium max-w-[120px] truncate">{user.user_metadata?.full_name || user.email}</span>
               </div>
-              <button onClick={() => supabase.auth.signOut()} className="text-[11px] text-slate-500 hover:text-white px-2 py-1 rounded-md hover:bg-brand-surface transition">Out</button>
+              <button onClick={() => supabase.auth.signOut()} className="text-[11px] text-slate-400 hover:text-white px-2 py-1 rounded-md hover:bg-brand-surface transition">Out</button>
             </div>
           ) : (
             <button onClick={() => setShowAuthModal(true)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition">
@@ -491,12 +531,12 @@ export default function App() {
             <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-sm flex-shrink-0">📄</div>
             <div className="min-w-0">
               <div className="text-[11px] font-semibold text-white truncate">{file ? file.name : resumeText ? "Cloud Resume" : "No Resume"}</div>
-              <div className="text-[10px] text-slate-500">{resumeSkills.length > 0 ? `${resumeSkills.length} skills parsed` : "Upload to start"}</div>
+              <div className="text-[10px] text-slate-400">{resumeSkills.length > 0 ? `${resumeSkills.length} skills parsed` : "Upload to start"}</div>
             </div>
           </div>
         </div>
 
-        <div className="text-[9px] font-bold uppercase tracking-widest text-slate-600 px-3 mb-1">Workspace</div>
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-3 mb-1.5">Workspace</div>
 
         {[
           { id: "find",    icon: "🔍", label: "Job Matcher",    badge: jobs.length > 0 ? jobs.length : null },
@@ -514,15 +554,15 @@ export default function App() {
         ))}
 
         <div className="flex-1" />
-        <div className="text-[9px] font-bold uppercase tracking-widest text-slate-600 px-3 mb-1">Stats</div>
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-3 mb-1.5">Stats</div>
         <div className="p-3 rounded-xl bg-brand-surface border border-brand-border space-y-2">
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-slate-400">Jobs Scored</span>
-            <span className="text-white font-bold">{jobs.length}</span>
+            <span className="text-white font-bold">{validScores.length}</span>
           </div>
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-slate-400">Top Match</span>
-            <span className="text-emerald-400 font-bold">{highestScore}%</span>
+            <span className="text-emerald-400 font-bold">{highestScore > 0 ? `${highestScore}%` : "—"}</span>
           </div>
           <div className="h-px bg-brand-border" />
           <button
@@ -594,7 +634,7 @@ export default function App() {
                   </div>
                   <div className="md:col-span-2 lg:col-span-2">
                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
-                    <input type="text" placeholder="Remote, NYC…" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 transition" />
+                    <input type="text" placeholder="Remote, Bangalore, Kolkata…" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 transition" />
                   </div>
                   <div className="md:col-span-1 lg:col-span-1">
                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
@@ -614,8 +654,18 @@ export default function App() {
                     <input type="range" min="0" max="80" step="5" value={minScore} onChange={e => setMinScore(Number(e.target.value))} className="w-full accent-amber-500 cursor-pointer" />
                   </div>
                   <div className="md:col-span-1 lg:col-span-1">
-                    <button type="button" onClick={analyze} disabled={loading} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 text-slate-950 text-sm font-bold transition shadow-lg shadow-amber-500/20 flex items-center justify-center">
-                      {loading ? <span className="animate-spin">⟳</span> : "→"}
+                    <button type="button" onClick={analyze} disabled={loading} className="w-full py-2.5 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 whitespace-nowrap">
+                      {loading ? (
+                        <>
+                          <span className="animate-spin text-sm">⟳</span>
+                          <span>Scanning…</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Find Matches</span>
+                          <span className="text-sm font-bold">→</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -633,17 +683,19 @@ export default function App() {
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 font-mono">
+                    <span className="text-xs text-slate-400 font-mono">
                       {jobs.filter((_, i) => { const sc = results[i]?.semantic?.score ?? results[i]?.score; return sc === undefined || sc >= minScore; }).length} / {jobs.length} visible
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                  {/* P1 #4 Fix: items-start prevents neighboring cards from stretching */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
                     {jobs.map((job, i) => {
                       const r = results[i];
                       const isOpen = expanded[i];
                       const sc = r?.semantic?.score ?? r?.score;
                       if (sc !== undefined && sc < minScore) return null;
+                      const activeSubTab = cardTab[i] || "skills";
                       const scoreColor = sc === undefined
                         ? "bg-brand-surface text-slate-500 border-brand-border"
                         : sc >= 75 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
@@ -651,142 +703,419 @@ export default function App() {
                         : "bg-brand-surface text-slate-400 border-brand-border";
 
                       return (
-                        <article key={i} className={`job-card ${isOpen ? "is-open" : ""} overflow-hidden`}>
-                          <div onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))} className="p-4 flex items-start justify-between gap-3 cursor-pointer">
+                        <article key={i} className={`job-card ${isOpen ? "is-open" : ""} overflow-hidden rounded-xl border border-brand-border bg-brand-surface transition-all duration-200`}>
+                          {/* P1 #7 Fix: Entire card header clickable with interactive hover state */}
+                          <div
+                            onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}
+                            className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-slate-800/40 transition-colors select-none group"
+                          >
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-semibold text-white hover:text-amber-300 transition leading-snug">{job.title}</h3>
+                              <h3 className="text-sm font-semibold text-white group-hover:text-amber-300 transition leading-snug">
+                                {job.title}
+                              </h3>
                               <div className="text-xs text-slate-400 mt-0.5 font-medium">{job.company}</div>
+
+                              {/* P1 #5 Badges: salary, date posted, experience, location */}
                               <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                {job.location && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200">
+                                    📍 {job.location}
+                                  </span>
+                                )}
+                                {job.job_type && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200">
+                                    💼 {job.job_type}
+                                  </span>
+                                )}
                                 {job.experience && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-amber-300 font-medium">
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-amber-300 font-medium font-mono">
                                     ⏳ {job.experience}
                                   </span>
                                 )}
-                                {job.location && <span className="text-[10px] px-2 py-0.5 rounded-md bg-brand-surface border border-brand-border text-slate-300">📍 {job.location}</span>}
-                                {job.job_type && <span className="text-[10px] px-2 py-0.5 rounded-md bg-brand-surface border border-brand-border text-slate-300">💼 {job.job_type}</span>}
+                                {job.salary && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 font-medium font-mono">
+                                    💰 {job.salary}
+                                  </span>
+                                )}
+                                {job.date_posted && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300">
+                                    📅 {job.date_posted}
+                                  </span>
+                                )}
                               </div>
                             </div>
+
+                            {/* P0 #1 Score Badge */}
                             <div className="flex flex-col items-end gap-2 flex-shrink-0">
                               <span className={`text-[11px] font-bold font-mono px-2.5 py-1 rounded-full border ${scoreColor}`}>
-                                {sc !== undefined ? `${sc}%` : "—"}
+                                {sc !== undefined ? `${sc}% Match` : "—"}
                               </span>
-                              <span className="text-slate-600 text-xs">{isOpen ? "▲" : "▼"}</span>
+                              <span className="text-slate-400 text-xs group-hover:text-white transition">
+                                {isOpen ? "▲" : "▼"}
+                              </span>
                             </div>
                           </div>
 
+                          {/* P1 #5 & #6 Expanded card details */}
                           {isOpen && (
-                            <div className="border-t border-brand-border bg-brand-panel/60 p-4 flex flex-col gap-4">
-                              {/* Actions */}
-                              <div className="flex flex-wrap items-center gap-2">
-                                <a href={job.link} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-surface hover:bg-slate-700 text-white border border-brand-border transition flex items-center gap-1">Apply ↗</a>
-                                <button type="button" onClick={() => applyPack(job, i)} disabled={busy[`ap${i}`]} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition">{busy[`ap${i}`] ? "…" : "📦 Apply Pack"}</button>
-                                <button type="button" onClick={() => trackJob(job, i)} disabled={busy[`tr${i}`]} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-surface hover:bg-slate-700 text-slate-300 border border-brand-border transition">{busy[`tr${i}`] ? "…" : "📌 Track"}</button>
-                              </div>
-                              <div className="flex flex-wrap gap-2 pt-1 border-t border-brand-border/60">
-                                <button onClick={() => matchScore(job, i)} disabled={busy[`m${i}`]} className="px-3 py-1 rounded-md text-[11px] font-medium bg-brand-surface border border-brand-border hover:border-slate-600 text-slate-300 hover:text-white transition">{busy[`m${i}`] ? "⟳" : "◎"} Match Score</button>
-                                <button onClick={() => semanticMatch(job, i)} disabled={busy[`sm${i}`]} className="px-3 py-1 rounded-md text-[11px] font-medium bg-brand-surface border border-brand-border hover:border-slate-600 text-slate-300 hover:text-white transition">{busy[`sm${i}`] ? "⟳" : "🧠"} Semantic</button>
-                                <button onClick={() => atsScore(job, i)} disabled={busy[`ats${i}`]} className="px-3 py-1 rounded-md text-[11px] font-medium bg-brand-surface border border-brand-border hover:border-slate-600 text-slate-300 hover:text-white transition">{busy[`ats${i}`] ? "⟳" : "❖"} ATS</button>
-                                <button onClick={() => interviewPrep(job, i)} disabled={busy[`ip${i}`]} className="px-3 py-1 rounded-md text-[11px] font-medium bg-brand-surface border border-brand-border hover:border-slate-600 text-slate-300 hover:text-white transition">{busy[`ip${i}`] ? "⟳" : "🎙️"} Interview</button>
+                            <div className="border-t border-brand-border bg-brand-panel/70 p-4 flex flex-col gap-4">
+
+                              {/* Short Description */}
+                              {job.description && (
+                                <div className="text-xs text-slate-300 leading-relaxed bg-brand-surface/70 border border-brand-border/60 rounded-xl p-3">
+                                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                                    Role Summary
+                                  </div>
+                                  <p className="line-clamp-3">
+                                    {job.description}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Key Qualifications */}
+                              {job.qualifications?.length > 0 && (
+                                <div className="text-xs text-slate-300 bg-brand-surface/70 border border-brand-border/60 rounded-xl p-3">
+                                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                    Key Requirements
+                                  </div>
+                                  <ul className="space-y-1 text-[11px]">
+                                    {job.qualifications.map((q, qi) => (
+                                      <li key={qi} className="flex items-start gap-1.5">
+                                        <span className="text-amber-400">•</span>
+                                        <span>{q}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {/* P1 #6 Primary Action Bar */}
+                              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => applyPack(job, i)}
+                                  disabled={busy[`ap${i}`]}
+                                  className="flex-1 min-w-[170px] py-2 px-3.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-md shadow-amber-500/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                  {busy[`ap${i}`] ? (
+                                    <>
+                                      <span className="animate-spin text-sm">⟳</span>
+                                      <span>Generating Pack…</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>📦 Generate Apply Pack</span>
+                                      <span className="text-[10px] font-normal opacity-80">(Resume + Cover)</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                <a
+                                  href={job.link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="py-2 px-3.5 rounded-xl text-xs font-semibold bg-brand-surface hover:bg-slate-700 text-white border border-brand-border transition flex items-center gap-1.5"
+                                >
+                                  <span>Apply Direct</span>
+                                  <span>↗</span>
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={() => trackJob(job, i)}
+                                  disabled={busy[`tr${i}`]}
+                                  className="py-2 px-3 rounded-xl text-xs font-medium bg-brand-surface hover:bg-slate-700 text-slate-300 border border-brand-border transition flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                  {busy[`tr${i}`] ? "Saving…" : "📌 Track"}
+                                </button>
                               </div>
 
-                              {/* Direct Match panel */}
-                              {r?.score !== undefined && (
-                                <div className="p-3.5 rounded-xl bg-brand-surface border border-brand-border text-xs flex flex-col gap-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Direct Match — {r.score}%</span>
-                                    <span className="text-[10px] font-mono text-slate-500">{r.matched_skills?.length || 0}✓ · {r.missing?.length || 0}✗</span>
-                                  </div>
-                                  <div className="w-full h-1.5 rounded-full bg-brand-border overflow-hidden">
-                                    <div className={`h-full rounded-full transition-all ${r.score >= 75 ? "bg-emerald-500" : r.score >= 50 ? "bg-amber-500" : "bg-slate-500"}`} style={{width:`${r.score}%`}} />
-                                  </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {r.matched_skills?.length > 0 && (
-                                      <div>
-                                        <div className="text-[10px] font-bold text-emerald-400 uppercase mb-1">Matched</div>
-                                        <div className="flex flex-wrap gap-1">
-                                          {r.matched_skills.map((s, idx) => <span key={idx} className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[10px]">✓ {s}</span>)}
+                              {/* P1 #9 Async Error Alert with Retry */}
+                              {actionErrors[`ap${i}`] && (
+                                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between gap-2">
+                                  <span>⚠️ {actionErrors[`ap${i}`]}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => applyPack(job, i)}
+                                    className="px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-[10px] font-bold"
+                                  >
+                                    ↺ Retry
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* P1 #6 Unified Deep AI Analysis Panel with Tabs */}
+                              <div className="rounded-xl border border-brand-border bg-brand-surface/80 overflow-hidden">
+                                {/* Tab Bar */}
+                                <div className="flex border-b border-brand-border bg-brand-panel/80 p-1 gap-1 overflow-x-auto">
+                                  {[
+                                    { id: "skills", label: "Skills & Roadmap", icon: "◎" },
+                                    { id: "semantic", label: "Semantic AI", icon: "🧠" },
+                                    { id: "ats", label: "ATS Check", icon: "❖" },
+                                    { id: "prep", label: "Interview Prep", icon: "🎙️" },
+                                  ].map(tab => (
+                                    <button
+                                      key={tab.id}
+                                      type="button"
+                                      onClick={() => setCardTab(p => ({ ...p, [i]: tab.id }))}
+                                      className={`flex-1 min-w-[90px] py-1.5 px-2 rounded-lg text-[11px] font-semibold transition flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                        activeSubTab === tab.id
+                                          ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                                      }`}
+                                    >
+                                      <span>{tab.icon}</span>
+                                      <span>{tab.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+
+                                {/* Tab Contents */}
+                                <div className="p-3.5">
+                                  {/* TAB 1: Skills & Roadmap */}
+                                  {activeSubTab === "skills" && (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+                                          Skill Match Breakdown — {sc ?? 0}%
+                                        </div>
+                                        <div className="text-[10px] font-mono text-slate-400">
+                                          {r?.matched_skills?.length || 0} matched · {r?.missing?.length || 0} missing
                                         </div>
                                       </div>
-                                    )}
-                                    {r.missing?.length > 0 && (
-                                      <div>
-                                        <div className="flex items-center justify-between mb-1">
-                                          <div className="text-[10px] font-bold text-rose-400 uppercase">Missing</div>
-                                          <button type="button" onClick={() => skillRoadmap(job, i)} disabled={busy[`rm${i}`]} className="text-[10px] text-amber-400 hover:text-amber-300 underline">{busy[`rm${i}`] ? "Loading…" : "Roadmap →"}</button>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1">
-                                          {r.missing.map((s, idx) => <span key={idx} className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[10px]">✗ {s}</span>)}
-                                        </div>
+
+                                      {/* Match bar */}
+                                      <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                                        <div
+                                          className={`h-full rounded-full transition-all duration-300 ${
+                                            (sc ?? 0) >= 75 ? "bg-emerald-500" : (sc ?? 0) >= 50 ? "bg-amber-500" : "bg-slate-500"
+                                          }`}
+                                          style={{ width: `${sc ?? 0}%` }}
+                                        />
                                       </div>
-                                    )}
-                                  </div>
-                                  {r?.roadmap && (
-                                    <div className="pt-2 border-t border-brand-border space-y-2">
-                                      <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Learning Roadmap</div>
-                                      {r.roadmap.map((item, ri) => (
-                                        <div key={ri} className="p-2 rounded-lg bg-brand-panel border border-brand-border/60">
-                                          <div className="flex items-center justify-between text-white text-[11px] font-medium mb-1">
-                                            <span>{item.skill}</span>
-                                            <div className="flex gap-1.5 text-[9px] text-slate-400">
-                                              <span className="px-1 py-0.5 rounded bg-brand-border">{item.level}</span>
-                                              <span>⏱ {item.time}</span>
-                                            </div>
+
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                        <div>
+                                          <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1.5">
+                                            ✓ Matched Skills
                                           </div>
-                                          {item.resources?.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
-                                              {item.resources.map((res, rj) => <a key={rj} href={res.url} target="_blank" rel="noreferrer" className="text-[10px] text-amber-400 hover:text-amber-300 underline">{res.name} ({res.type})</a>)}
+                                          {r?.matched_skills?.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1">
+                                              {r.matched_skills.map((s, idx) => (
+                                                <span key={idx} className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[10px]">
+                                                  ✓ {s}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="text-[11px] text-slate-500 italic">No direct keyword overlap found</div>
+                                          )}
+                                        </div>
+
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1.5">
+                                            <div className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
+                                              ✗ Missing Skills
+                                            </div>
+                                            {r?.missing?.length > 0 && !r?.roadmap && (
+                                              <button
+                                                type="button"
+                                                onClick={() => skillRoadmap(job, i)}
+                                                disabled={busy[`rm${i}`]}
+                                                className="text-[10px] text-amber-400 hover:text-amber-300 underline font-medium"
+                                              >
+                                                {busy[`rm${i}`] ? "Loading…" : "Get Roadmap →"}
+                                              </button>
+                                            )}
+                                          </div>
+                                          {r?.missing?.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1">
+                                              {r.missing.map((s, idx) => (
+                                                <span key={idx} className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[10px]">
+                                                  ✗ {s}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="text-[11px] text-slate-500 italic">All key skills matched</div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Roadmap display */}
+                                      {r?.roadmap && (
+                                        <div className="pt-2 border-t border-brand-border space-y-2 mt-2">
+                                          <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                                            Tailored Learning Roadmap
+                                          </div>
+                                          {r.roadmap.map((item, ri) => (
+                                            <div key={ri} className="p-2 rounded-lg bg-brand-panel border border-brand-border/60">
+                                              <div className="flex items-center justify-between text-white text-[11px] font-medium mb-1">
+                                                <span>{item.skill}</span>
+                                                <div className="flex gap-1.5 text-[9px] text-slate-400">
+                                                  <span className="px-1 py-0.5 rounded bg-brand-border">{item.level}</span>
+                                                  <span>⏱ {item.time}</span>
+                                                </div>
+                                              </div>
+                                              {item.resources?.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                  {item.resources.map((res, rj) => (
+                                                    <a key={rj} href={res.url} target="_blank" rel="noreferrer" className="text-[10px] text-amber-400 hover:text-amber-300 underline">
+                                                      {res.name} ({res.type})
+                                                    </a>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {actionErrors[`rm${i}`] && (
+                                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+                                          <span>{actionErrors[`rm${i}`]}</span>
+                                          <button type="button" onClick={() => skillRoadmap(job, i)} className="text-[10px] font-bold text-rose-200 underline">↺ Retry</button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* TAB 2: Semantic AI */}
+                                  {activeSubTab === "semantic" && (
+                                    <div className="space-y-3">
+                                      {r?.semantic ? (
+                                        <div>
+                                          <div className="flex items-center justify-between mb-2">
+                                            <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
+                                              Semantic Alignment Score
+                                            </span>
+                                            <span className="font-mono font-bold text-emerald-400 text-xs">
+                                              {r.semantic.score}%
+                                            </span>
+                                          </div>
+                                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                            {r.semantic.matched_skills?.map((m, idx) => (
+                                              <div key={idx} className="flex items-center justify-between text-[11px] text-slate-300 py-1 border-b border-brand-border/40">
+                                                <span><strong className="text-white">{m.skill}</strong> ↔ {m.matched_to}</span>
+                                                <span className="font-mono text-emerald-400">{m.relevance}%</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                          {r.semantic.missing_skills?.length > 0 && (
+                                            <div className="pt-2 text-[11px]">
+                                              <span className="text-slate-400">Missing Concepts: </span>
+                                              <span className="text-amber-400 font-medium">{r.semantic.missing_skills.join(", ")}</span>
                                             </div>
                                           )}
                                         </div>
-                                      ))}
+                                      ) : (
+                                        <div className="text-center py-4 space-y-2">
+                                          <p className="text-xs text-slate-400">
+                                            Run deep LLM analysis to evaluate how your resume's experience conceptually maps to this specific job description.
+                                          </p>
+                                          <button
+                                            type="button"
+                                            onClick={() => semanticMatch(job, i)}
+                                            disabled={busy[`sm${i}`]}
+                                            className="px-3.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950 text-xs font-semibold transition"
+                                          >
+                                            {busy[`sm${i}`] ? "Evaluating Semantic Fit…" : "🧠 Run Semantic Analysis"}
+                                          </button>
+                                        </div>
+                                      )}
+                                      {actionErrors[`sm${i}`] && (
+                                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+                                          <span>{actionErrors[`sm${i}`]}</span>
+                                          <button type="button" onClick={() => semanticMatch(job, i)} className="text-[10px] font-bold text-rose-200 underline">↺ Retry</button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* TAB 3: ATS Check */}
+                                  {activeSubTab === "ats" && (
+                                    <div className="space-y-3">
+                                      {r?.ats ? (
+                                        <div className="space-y-2">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">ATS Pass Score</span>
+                                            <span className="text-emerald-400 font-bold font-mono">{r.ats.ats_score}%</span>
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-2 text-center my-2">
+                                            {[{l:"Keywords",v:r.ats.keyword_match},{l:"Format",v:r.ats.format_score},{l:"Experience",v:r.ats.experience_match}].map(m => (
+                                              <div key={m.l} className="p-2 rounded-lg bg-brand-panel border border-brand-border">
+                                                <div className="text-slate-400 text-[10px] uppercase font-semibold">{m.l}</div>
+                                                <div className="font-bold text-white text-sm mt-0.5">{m.v}%</div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                          {r.ats.strengths?.length > 0 && (
+                                            <div className="text-[11px] text-slate-300">
+                                              <span className="text-emerald-400 font-semibold">Strengths: </span>
+                                              <span>{r.ats.strengths.join(" • ")}</span>
+                                            </div>
+                                          )}
+                                          {r.ats.improvements?.length > 0 && (
+                                            <div className="text-[11px] text-slate-300">
+                                              <span className="text-amber-400 font-semibold">Recommended Fixes: </span>
+                                              <span>{r.ats.improvements.join(" • ")}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-center py-4 space-y-2">
+                                          <p className="text-xs text-slate-400">
+                                            Simulate enterprise ATS screening to score keyword density, format compatibility, and experience alignment.
+                                          </p>
+                                          <button
+                                            type="button"
+                                            onClick={() => atsScore(job, i)}
+                                            disabled={busy[`ats${i}`]}
+                                            className="px-3.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 text-xs font-semibold transition"
+                                          >
+                                            {busy[`ats${i}`] ? "Screening Resume…" : "❖ Run ATS Check"}
+                                          </button>
+                                        </div>
+                                      )}
+                                      {actionErrors[`ats${i}`] && (
+                                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+                                          <span>{actionErrors[`ats${i}`]}</span>
+                                          <button type="button" onClick={() => atsScore(job, i)} className="text-[10px] font-bold text-rose-200 underline">↺ Retry</button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* TAB 4: Interview Prep */}
+                                  {activeSubTab === "prep" && (
+                                    <div className="space-y-3">
+                                      {r?.interviewPrep ? (
+                                        <InterviewPrepView data={r.interviewPrep} />
+                                      ) : (
+                                        <div className="text-center py-4 space-y-2">
+                                          <p className="text-xs text-slate-400">
+                                            Generate custom interview coaching questions, gap handling strategies, and company-specific STAR talking points.
+                                          </p>
+                                          <button
+                                            type="button"
+                                            onClick={() => interviewPrep(job, i)}
+                                            disabled={busy[`ip${i}`]}
+                                            className="px-3.5 py-1.5 rounded-lg bg-indigo-500/15 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-500 hover:text-white text-xs font-semibold transition"
+                                          >
+                                            {busy[`ip${i}`] ? "Generating Guide…" : "🎙️ Generate Interview Prep"}
+                                          </button>
+                                        </div>
+                                      )}
+                                      {actionErrors[`ip${i}`] && (
+                                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+                                          <span>{actionErrors[`ip${i}`]}</span>
+                                          <button type="button" onClick={() => interviewPrep(job, i)} className="text-[10px] font-bold text-rose-200 underline">↺ Retry</button>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
-                              )}
-
-                              {/* Semantic */}
-                              {r?.semantic && (
-                                <div className="p-3.5 rounded-xl bg-brand-surface border border-brand-border text-xs flex flex-col gap-2">
-                                  <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Semantic Match — {r.semantic.score}%</div>
-                                  {r.semantic.matched_skills?.map((m, idx) => (
-                                    <div key={idx} className="flex items-center justify-between text-slate-300">
-                                      <span><strong className="text-white">{m.skill}</strong> ↔ {m.matched_to}</span>
-                                      <span className="font-mono text-emerald-400">{m.relevance}%</span>
-                                    </div>
-                                  ))}
-                                  {r.semantic.missing_skills?.length > 0 && (
-                                    <div className="pt-2 border-t border-brand-border text-[11px]">
-                                      <span className="text-slate-400">Missing: </span>
-                                      <span className="text-amber-400 font-medium">{r.semantic.missing_skills.join(", ")}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* ATS */}
-                              {r?.ats && (
-                                <div className="p-3.5 rounded-xl bg-brand-surface border border-brand-border text-xs space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">ATS Compatibility</span>
-                                    <span className="text-emerald-400 font-bold font-mono">{r.ats.ats_score}%</span>
-                                  </div>
-                                  <div className="grid grid-cols-3 gap-2 text-center">
-                                    {[{l:"Keywords",v:r.ats.keyword_match},{l:"Format",v:r.ats.format_score},{l:"XP",v:r.ats.experience_match}].map(m => (
-                                      <div key={m.l} className="p-2 rounded-lg bg-brand-panel border border-brand-border">
-                                        <div className="text-slate-500 text-[9px] uppercase">{m.l}</div>
-                                        <div className="font-bold text-white text-sm">{m.v}%</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Interview Prep */}
-                              {r?.interviewPrep && (
-                                <div className="p-3.5 rounded-xl bg-brand-surface border border-brand-border text-xs">
-                                  <InterviewPrepView data={r.interviewPrep} />
-                                </div>
-                              )}
+                              </div>
                             </div>
                           )}
                         </article>
