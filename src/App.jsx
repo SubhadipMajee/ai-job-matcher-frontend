@@ -33,10 +33,12 @@ async function apiReq(method, path, data = null, customHeaders = {}, retries = 2
         });
       } catch (err) {
         lastError = err;
-        if (err.response) {
+        const status = err.response?.status;
+        const isGatewayError = status === 502 || status === 503 || status === 504;
+        if (err.response && !isGatewayError) {
           throw err;
         }
-        const isNetworkError = !err.response && (err.code === "ECONNABORTED" || err.message === "Network Error");
+        const isNetworkError = (!err.response || isGatewayError) && (err.code === "ECONNABORTED" || err.message === "Network Error" || isGatewayError);
         if (isNetworkError && attempt < retries) {
           await new Promise((r) => setTimeout(r, 1000));
           continue;
