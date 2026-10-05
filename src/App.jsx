@@ -145,6 +145,9 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session) {
+        setShowAuthModal(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -463,8 +466,12 @@ export default function App() {
                 </button>
               )}
               <div className="flex items-center gap-2 pl-2 pr-2 py-1 rounded-full bg-brand-surface border border-brand-border hover:border-slate-600 transition cursor-pointer">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white">{userInitials}</div>
-                <span className="hidden md:inline text-[11px] text-slate-300 font-medium max-w-[120px] truncate">{user.email}</span>
+                {user.user_metadata?.avatar_url ? (
+                  <img src={user.user_metadata.avatar_url} alt="Profile" className="w-6 h-6 rounded-full object-cover" />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white">{userInitials}</div>
+                )}
+                <span className="hidden md:inline text-[11px] text-slate-300 font-medium max-w-[120px] truncate">{user.user_metadata?.full_name || user.email}</span>
               </div>
               <button onClick={() => supabase.auth.signOut()} className="text-[11px] text-slate-500 hover:text-white px-2 py-1 rounded-md hover:bg-brand-surface transition">Out</button>
             </div>
@@ -901,7 +908,18 @@ export default function App() {
       </div>
 
       {/* Auth Modal */}
-      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onSuccess={() => setShowAuthModal(false)} />}
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => setShowAuthModal(false)}
+          onAuthSuccess={(s) => {
+            setSession(s);
+            setUser(s?.user);
+            setShowAuthModal(false);
+          }}
+        />
+      )}
 
       {/* Apply Pack Modal */}
       {activeApplyPack && <ApplyPackModal pack={activeApplyPack} onClose={() => setActiveApplyPack(null)} />}
