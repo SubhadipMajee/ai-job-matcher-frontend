@@ -127,7 +127,7 @@ export default function App() {
   // Modals & Application Tracking
   const [activeApplyPack, setActiveApplyPack] = useState(null);
   const [serverStatus, setServerStatus] = useState("");
-  const [activePipelineCount, setActivePipelineCount] = useState(4);
+  const [activePipelineCount, setActivePipelineCount] = useState(0);
 
   const setB = (k, v) => setBusy(p => ({ ...p, [k]: v }));
   const upd = (i, data) => setResults(p => ({ ...p, [i]: { ...p[i], ...data } }));
@@ -157,17 +157,29 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch Saved Resume if Logged In
+  // Fetch Saved Resume & Active Pipeline Count if Logged In
   useEffect(() => {
-    if (session?.access_token && !resumeText) {
-      apiReq("GET", "/resume", null, {
+    if (session?.access_token) {
+      if (!resumeText) {
+        apiReq("GET", "/resume", null, {
+          Authorization: `Bearer ${session.access_token}`
+        }).then(res => {
+          if (res?.data?.resume_text) {
+            setResumeText(res.data.resume_text);
+            setResumeSkills(res.data.resume_skills || []);
+          }
+        }).catch(() => {});
+      }
+
+      // Sync user's real Kanban pipeline count
+      apiReq("GET", "/tracker", null, {
         Authorization: `Bearer ${session.access_token}`
       }).then(res => {
-        if (res?.data?.resume_text) {
-          setResumeText(res.data.resume_text);
-          setResumeSkills(res.data.resume_skills || []);
-        }
+        const apps = res?.data?.applications || [];
+        setActivePipelineCount(apps.length);
       }).catch(() => {});
+    } else {
+      setActivePipelineCount(0);
     }
   }, [session]);
 
@@ -1197,7 +1209,14 @@ export default function App() {
                 <h1 className="text-xl font-serif text-white font-medium tracking-tight">Application Tracker</h1>
                 <p className="text-xs text-slate-400 mt-0.5">Drag-and-drop Kanban board across your hiring pipeline stages.</p>
               </div>
-              <KanbanTracker token={session?.access_token} apiPost={apiPost} onOpenTailor={() => setActiveTab("tailor")} onOpenPrep={() => setActiveTab("find")} />
+              <KanbanTracker
+                token={session?.access_token}
+                apiPost={apiPost}
+                onOpenTailor={() => setActiveTab("tailor")}
+                onOpenPrep={() => setActiveTab("find")}
+                onRequireAuth={() => setShowAuthModal(true)}
+                onCountChange={setActivePipelineCount}
+              />
             </div>
           )}
 

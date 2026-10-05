@@ -7,13 +7,20 @@ const STAGES = [
   { id: "offer", label: "Offer Received", dotColor: "bg-emerald-400 ring-emerald-400/20", countBg: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20", border: "border-emerald-500/30 ring-1 ring-emerald-500/20" },
 ];
 
-export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep }) {
+export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep, onRequireAuth, onCountChange }) {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingNotesId, setEditingNotesId] = useState(null);
   const [notesText, setNotesText] = useState("");
+
+  // Sync count to parent whenever applications changes
+  useEffect(() => {
+    if (onCountChange) {
+      onCountChange(applications.length);
+    }
+  }, [applications, onCountChange]);
 
   // New Application Form
   const [newTitle, setNewTitle] = useState("");
@@ -24,7 +31,10 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
   const [newNotes, setNewNotes] = useState("");
 
   const fetchApplications = async () => {
-    if (!token) return;
+    if (!token) {
+      setApplications([]);
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiPost("/tracker", null, {
@@ -156,7 +166,14 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
 
           <button
             type="button"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              if (!token) {
+                if (onRequireAuth) onRequireAuth();
+                else alert("Please sign in to add and track applications.");
+                return;
+              }
+              setShowAddModal(true);
+            }}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition shadow-sm"
           >
             <span>+</span>
@@ -164,6 +181,24 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
           </button>
         </div>
       </div>
+
+      {!token && (
+        <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+          <div className="flex items-center gap-2">
+            <span>🔒</span>
+            <span>You are currently signed out. Sign in to save and sync your job pipeline to your account.</span>
+          </div>
+          {onRequireAuth && (
+            <button
+              type="button"
+              onClick={onRequireAuth}
+              className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition text-xs"
+            >
+              Sign In
+            </button>
+          )}
+        </div>
+      )}
 
       {loading && (
         <div className="h-0.5 w-full bg-slate-800 overflow-hidden">
