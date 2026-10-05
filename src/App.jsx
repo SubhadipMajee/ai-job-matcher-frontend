@@ -215,13 +215,37 @@ export default function App() {
   const matchScore = async (job, i) => {
     setB(`m${i}`, true);
     try {
+      if (!resumeSkills || resumeSkills.length === 0) {
+        alert("Please upload and parse your resume first to extract skills.");
+        setB(`m${i}`, false);
+        return;
+      }
+
+      let jSkills = results[i]?.job_skills;
+      if (!jSkills || jSkills.length === 0) {
+        const sf = new FormData();
+        sf.append("job_description", job.description || "");
+        const sr = await apiPost("/job-skills", sf);
+        jSkills = sr.data.job_skills || [];
+      }
+
       const fd = new FormData();
       fd.append("resume_skills", JSON.stringify(resumeSkills));
-      fd.append("job_description", job.description);
+      fd.append("job_skills", JSON.stringify(jSkills));
+      fd.append("job_description", job.description || "");
       const res = await apiPost("/match", fd);
-      upd(i, { score: res.data.match_score, missing: res.data.missing_skills });
+      const score = res.data.score ?? res.data.match_score ?? 0;
+      upd(i, {
+        score,
+        matched_skills: res.data.matched_skills || [],
+        missing: res.data.missing_skills || [],
+        missing_skills: res.data.missing_skills || [],
+        job_skills: jSkills,
+      });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("Match score error: " + e.message); }
+    } catch (e) {
+      alert("Match score error: " + (e.response?.data?.detail || e.message));
+    }
     setB(`m${i}`, false);
   };
 
@@ -235,7 +259,7 @@ export default function App() {
       const res = await apiPost("/semantic-match", fd);
       upd(i, { semantic: res.data });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("Semantic match error: " + e.message); }
+    } catch (e) { alert("Semantic match error: " + (e.response?.data?.detail || e.message)); }
     setB(`sm${i}`, false);
   };
 
@@ -248,7 +272,7 @@ export default function App() {
       const res = await apiPost("/ats-score", fd);
       upd(i, { ats: res.data });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("ATS analysis error: " + e.message); }
+    } catch (e) { alert("ATS analysis error: " + (e.response?.data?.detail || e.message)); }
     setB(`ats${i}`, false);
   };
 
@@ -262,7 +286,7 @@ export default function App() {
       const res = await apiPost("/skill-roadmap", fd);
       upd(i, { roadmap: res.data.roadmap });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("Roadmap error: " + e.message); }
+    } catch (e) { alert("Roadmap error: " + (e.response?.data?.detail || e.message)); }
     setB(`rm${i}`, false);
   };
 
@@ -275,7 +299,7 @@ export default function App() {
       const res = await apiPost("/interview-prep", fd);
       upd(i, { interviewPrep: res.data });
       setExpanded(p => ({ ...p, [i]: true }));
-    } catch (e) { alert("Interview prep error: " + e.message); }
+    } catch (e) { alert("Interview prep error: " + (e.response?.data?.detail || e.message)); }
     setB(`ip${i}`, false);
   };
 
@@ -290,7 +314,7 @@ export default function App() {
       f.append("link", job.link || "");
       const r = await apiPost("/apply-pack", f);
       setActiveApplyPack(r.data);
-    } catch (e) { alert("Apply pack error: " + e.message); }
+    } catch (e) { alert("Apply pack error: " + (e.response?.data?.detail || e.message)); }
     setB(`ap${i}`, false);
   };
 
@@ -854,6 +878,90 @@ export default function App() {
                                 {busy[`ip${i}`] ? "…" : "🎙️"} Interview Prep
                               </button>
                             </div>
+
+                            {/* Direct Skill Match Details Box */}
+                            {r?.score !== undefined && (
+                              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
+                                    Direct Skill Match ({r.score}%)
+                                  </div>
+                                  <div className="text-[11px] font-mono text-slate-400">
+                                    {r.matched_skills?.length || 0} matched • {r.missing?.length || 0} missing
+                                  </div>
+                                </div>
+
+                                {r.matched_skills?.length > 0 && (
+                                  <div>
+                                    <div className="text-[10px] uppercase font-semibold text-emerald-400 mb-1.5">Matched Skills</div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {r.matched_skills.map((s, idx) => (
+                                        <span key={idx} className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px]">
+                                          ✓ {s}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {r.missing?.length > 0 && (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <div className="text-[10px] uppercase font-semibold text-rose-400">Missing Skills</div>
+                                      <button
+                                        type="button"
+                                        onClick={() => skillRoadmap(job, i)}
+                                        disabled={busy[`rm${i}`]}
+                                        className="text-[10px] text-amber-400 hover:text-amber-300 underline font-medium"
+                                      >
+                                        {busy[`rm${i}`] ? "Generating Roadmap…" : "🚀 View Skill Roadmap"}
+                                      </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {r.missing.map((s, idx) => (
+                                        <span key={idx} className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px]">
+                                          ✗ {s}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {r?.roadmap && (
+                                  <div className="mt-2 pt-2 border-t border-slate-800 space-y-2">
+                                    <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
+                                      Learning Roadmap
+                                    </div>
+                                    {r.roadmap.map((item, ri) => (
+                                      <div key={ri} className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800/80 space-y-1">
+                                        <div className="flex items-center justify-between text-white font-medium">
+                                          <span>{item.skill}</span>
+                                          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                            <span className="px-1.5 py-0.5 rounded bg-slate-800">{item.level}</span>
+                                            <span>⏱ {item.time}</span>
+                                          </div>
+                                        </div>
+                                        {item.resources?.length > 0 && (
+                                          <div className="flex flex-wrap gap-2 mt-1">
+                                            {item.resources.map((res, rj) => (
+                                              <a
+                                                key={rj}
+                                                href={res.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-[10px] text-amber-400 hover:text-amber-300 underline"
+                                              >
+                                                {res.name} ({res.type})
+                                              </a>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             {/* Semantic Match Details Box */}
                             {r?.semantic && (
