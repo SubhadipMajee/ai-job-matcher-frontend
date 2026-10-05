@@ -104,6 +104,7 @@ export default function App() {
   const [jobRole, setJobRole] = useState("full stack developer");
   const [location, setLocation] = useState("");
   const [jobType, setJobType] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
   const [minScore, setMinScore] = useState(0);
   const [loading, setLoading] = useState(false);
   const [resumeText, setResumeText] = useState("");
@@ -205,6 +206,7 @@ export default function App() {
       jf.append("job_role", jobRole);
       jf.append("location", location);
       jf.append("job_type", jobType);
+      jf.append("experience_level", experienceLevel);
       const jr = await apiPost("/fetch-jobs", jf);
       setJobs(jr.data.jobs || []);
     } catch (e) {
@@ -568,32 +570,43 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-3 lg:col-span-3">
                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Role *</label>
                     <input type="text" placeholder="e.g. Full Stack Developer" value={jobRole} onChange={e => setJobRole(e.target.value)} onKeyDown={e => e.key === "Enter" && analyze()} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 transition" />
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 lg:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Experience</label>
+                    <select value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3 py-2.5 text-xs text-white transition">
+                      <option value="">Any Experience</option>
+                      <option value="ENTRY_LEVEL">Entry Level (0-2 yrs)</option>
+                      <option value="MID_LEVEL">Mid Level (3-5 yrs)</option>
+                      <option value="SENIOR">Senior (5-8 yrs)</option>
+                      <option value="LEAD">Lead / Staff (8+ yrs)</option>
+                      <option value="EXECUTIVE">Executive / Dir</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-2">
                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
                     <input type="text" placeholder="Remote, NYC…" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 transition" />
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-1 lg:col-span-1">
                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
-                    <select value={jobType} onChange={e => setJobType(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-white transition">
+                    <select value={jobType} onChange={e => setJobType(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-2 py-2.5 text-xs text-white transition">
                       <option value="">Any</option>
                       <option value="FULLTIME">Full Time</option>
                       <option value="PARTTIME">Part Time</option>
-                      <option value="INTERN">Internship</option>
+                      <option value="INTERN">Intern</option>
                       <option value="CONTRACTOR">Contract</option>
                     </select>
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-1 lg:col-span-1">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Min Score</label>
                       <span className="text-[11px] font-mono font-bold text-amber-400">{minScore}%</span>
                     </div>
                     <input type="range" min="0" max="80" step="5" value={minScore} onChange={e => setMinScore(Number(e.target.value))} className="w-full accent-amber-500 cursor-pointer" />
                   </div>
-                  <div className="md:col-span-1">
+                  <div className="md:col-span-1 lg:col-span-1">
                     <button type="button" onClick={analyze} disabled={loading} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 text-slate-950 text-sm font-bold transition shadow-lg shadow-amber-500/20 flex items-center justify-center">
                       {loading ? <span className="animate-spin">⟳</span> : "→"}
                     </button>
@@ -604,8 +617,15 @@ export default function App() {
               {/* ── Results grid ── */}
               {jobs.length > 0 && (
                 <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-white">Scored Opportunities</h2>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-white">Scored Opportunities</h2>
+                      {experienceLevel && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 capitalize">
+                          {experienceLevel.replace("_", " ").toLowerCase()}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-slate-500 font-mono">
                       {jobs.filter((_, i) => { const sc = results[i]?.semantic?.score ?? results[i]?.score; return sc === undefined || sc >= minScore; }).length} / {jobs.length} visible
                     </span>
@@ -630,6 +650,11 @@ export default function App() {
                               <h3 className="text-sm font-semibold text-white hover:text-amber-300 transition leading-snug">{job.title}</h3>
                               <div className="text-xs text-slate-400 mt-0.5 font-medium">{job.company}</div>
                               <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                {job.experience && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/25 text-amber-300 font-medium">
+                                    ⏳ {job.experience}
+                                  </span>
+                                )}
                                 {job.location && <span className="text-[10px] px-2 py-0.5 rounded-md bg-brand-surface border border-brand-border text-slate-300">📍 {job.location}</span>}
                                 {job.job_type && <span className="text-[10px] px-2 py-0.5 rounded-md bg-brand-surface border border-brand-border text-slate-300">💼 {job.job_type}</span>}
                               </div>
