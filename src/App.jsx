@@ -478,11 +478,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Center search hint */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-surface border border-brand-border text-slate-400 text-xs select-none">
-          <span>🔍</span><span>Search jobs…</span>
-          <kbd className="ml-2 px-1.5 py-0.5 rounded bg-brand-border text-[10px] text-slate-300">⌘K</kbd>
-        </div>
 
         {/* Right */}
         <div className="flex items-center gap-2 lg:gap-3">
