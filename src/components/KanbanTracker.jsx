@@ -14,6 +14,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingNotesId, setEditingNotesId] = useState(null);
   const [notesText, setNotesText] = useState("");
+  const [selectedMobileStage, setSelectedMobileStage] = useState("all");
 
   // Sync count to parent whenever applications changes
   useEffect(() => {
@@ -137,12 +138,12 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
   });
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex flex-col gap-4 sm:gap-6">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-2 border-b border-slate-800/80">
         <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-serif text-white font-medium">Application Pipeline</h2>
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+            <h2 className="text-xl sm:text-2xl font-serif text-white font-medium">Application Pipeline</h2>
             <span className="text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700/60 px-2.5 py-0.5 rounded-full">
               {applications.length} Active Application{applications.length === 1 ? "" : "s"}
             </span>
@@ -153,16 +154,14 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
         </div>
 
         {/* Filter & Add Button */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search role, company..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-48 sm:w-56 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80"
-            />
-          </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="Search role, company..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 sm:w-56 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 sm:py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/80"
+          />
 
           <button
             type="button"
@@ -174,16 +173,17 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
               }
               setShowAddModal(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition shadow-sm"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition shadow-sm min-h-[34px]"
           >
             <span>+</span>
-            <span>Add Application</span>
+            <span className="hidden xs:inline">Add Application</span>
+            <span className="xs:hidden">Add</span>
           </button>
         </div>
       </div>
 
       {!token && (
-        <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+        <div className="flex items-center justify-between flex-wrap gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
           <div className="flex items-center gap-2">
             <span>🔒</span>
             <span>You are currently signed out. Sign in to save and sync your job pipeline to your account.</span>
@@ -206,15 +206,56 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
         </div>
       )}
 
-      {/* 4 Column Kanban Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+      {/* Mobile Stage Selector Pills */}
+      <div className="flex md:hidden items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setSelectedMobileStage("all")}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
+            selectedMobileStage === "all"
+              ? "bg-amber-500 text-slate-950 font-bold shadow-sm"
+              : "bg-slate-900 border border-slate-800 text-slate-400"
+          }`}
+        >
+          All ({filteredApps.length})
+        </button>
+        {STAGES.map(s => {
+          const cnt = filteredApps.filter(a => (a.stage || "saved") === s.id).length;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSelectedMobileStage(s.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition flex items-center gap-1.5 ${
+                selectedMobileStage === s.id
+                  ? "bg-amber-500 text-slate-950 font-bold shadow-sm"
+                  : "bg-slate-900 border border-slate-800 text-slate-400"
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${s.dotColor.split(" ")[0]}`} />
+              <span>{s.label}</span>
+              <span className="opacity-80 text-[10px]">({cnt})</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4 Column Kanban Grid / Mobile Swipeable Carousel */}
+      <div className="flex md:grid overflow-x-auto md:overflow-visible pb-3 md:pb-0 snap-x snap-mandatory md:snap-none gap-4 md:grid-cols-2 lg:grid-cols-4 items-start no-scrollbar">
         {STAGES.map(stage => {
           const items = filteredApps.filter(a => (a.stage || "saved") === stage.id);
+          const isHiddenOnMobile = selectedMobileStage !== "all" && selectedMobileStage !== stage.id;
 
           return (
             <div
               key={stage.id}
-              className="flex flex-col rounded-2xl bg-slate-950/60 border border-slate-800/80 p-3 min-h-[580px]"
+              className={`flex flex-col rounded-2xl bg-slate-950/60 border border-slate-800/80 p-3 min-h-[240px] sm:min-h-[300px] md:min-h-[580px] ${
+                isHiddenOnMobile ? "hidden md:flex" : "flex"
+              } ${
+                selectedMobileStage === "all"
+                  ? "w-[85vw] max-w-[340px] shrink-0 snap-center md:w-auto md:max-w-none md:shrink"
+                  : "w-full"
+              }`}
             >
               {/* Column Header */}
               <div className="flex items-center justify-between px-2 py-2 mb-2">
@@ -230,7 +271,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
               {/* Cards Container */}
               <div className="flex flex-col gap-3 flex-1">
                 {items.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-900 rounded-xl">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-900 rounded-xl min-h-[140px]">
                     <span className="text-xs text-slate-600 font-light italic">No opportunities</span>
                   </div>
                 ) : (
@@ -244,15 +285,15 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
                       >
                         {/* Card Header: Company Logo initial & Title */}
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center font-bold text-xs text-amber-300">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center font-bold text-xs text-amber-300 flex-shrink-0">
                               {companyInitial}
                             </div>
-                            <div>
-                              <h4 className="text-xs font-semibold text-white group-hover:text-amber-300 transition">
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-semibold text-white group-hover:text-amber-300 transition break-words">
                                 {app.title}
                               </h4>
-                              <span className="text-[11px] text-slate-400">
+                              <span className="text-[11px] text-slate-400 block truncate">
                                 {app.company}
                               </span>
                             </div>
@@ -260,7 +301,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
 
                           <button
                             onClick={() => handleDelete(app.id)}
-                            className="text-slate-600 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition p-0.5"
+                            className="text-slate-500 hover:text-red-400 text-sm opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition p-1 shrink-0"
                             title="Delete card"
                           >
                             ×
@@ -274,7 +315,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
                               <span>Interview Round</span>
                               <span className="text-amber-400/80">Active</span>
                             </div>
-                            <p className="text-[11px] text-slate-300 leading-snug">
+                            <p className="text-[11px] text-slate-300 leading-snug break-words">
                               {app.notes || "Prepare technical talking points and company background."}
                             </p>
                           </div>
@@ -285,14 +326,14 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
                             <div className="text-[10px] text-emerald-400 font-semibold tracking-wider uppercase">
                               Compensation & Terms
                             </div>
-                            <div className="text-xs font-bold text-white mt-0.5">
+                            <div className="text-xs font-bold text-white mt-0.5 break-words">
                               {app.notes || "Review offer package & decision deadline."}
                             </div>
                           </div>
                         )}
 
                         {stage.id !== "interview" && stage.id !== "offer" && app.notes && (
-                          <div className="text-[11px] text-slate-400 bg-slate-950/60 p-2 rounded border border-slate-800">
+                          <div className="text-[11px] text-slate-400 bg-slate-950/60 p-2 rounded border border-slate-800 break-words">
                             {app.notes}
                           </div>
                         )}
@@ -304,7 +345,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
                               href={app.link}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                              className="text-xs text-amber-400 hover:underline flex items-center gap-1 py-1"
                             >
                               <span>Posting ↗</span>
                             </a>
@@ -316,7 +357,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
                             {stage.id === "interview" && (
                               <button
                                 onClick={() => onOpenPrep && onOpenPrep(app)}
-                                className="text-xs text-amber-400 hover:text-amber-300 font-medium"
+                                className="text-xs text-amber-400 hover:text-amber-300 font-medium px-2 py-1 rounded hover:bg-amber-500/10 transition"
                               >
                                 🧠 AI Prep
                               </button>
@@ -324,7 +365,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
 
                             <button
                               onClick={() => handleMoveStage(app.id, stage.id)}
-                              className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1"
+                              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 min-h-[30px]"
                               title="Advance to next column"
                             >
                               <span>➔</span>
@@ -340,7 +381,7 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
                 <button
                   type="button"
                   onClick={() => { setNewStage(stage.id); setShowAddModal(true); }}
-                  className="w-full py-2.5 border border-dashed border-slate-800 hover:border-slate-700 rounded-xl text-xs text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5 mt-auto"
+                  className="w-full py-2.5 border border-dashed border-slate-800 hover:border-slate-700 rounded-xl text-xs text-slate-500 hover:text-slate-300 transition flex items-center justify-center gap-1.5 mt-auto min-h-[38px]"
                 >
                   <span>+ Save another opportunity</span>
                 </button>
@@ -352,11 +393,11 @@ export default function KanbanTracker({ token, apiPost, onOpenTailor, onOpenPrep
 
       {/* Add Application Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative">
             <button
               onClick={() => setShowAddModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white text-xl"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-1"
             >
               ×
             </button>

@@ -82,9 +82,9 @@ export default function DigestSettings({ userEmail, resumeSkills }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto rounded-2xl bg-slate-900/60 border border-slate-800/80 p-8 backdrop-blur-sm shadow-xl">
-      <div className="text-center mb-6">
-        <h3 className="text-2xl font-serif text-white font-medium mb-2">Automated Daily Job Digest</h3>
+    <div className="max-w-2xl mx-auto rounded-2xl bg-slate-900/60 border border-slate-800/80 p-4 sm:p-6 md:p-8 backdrop-blur-sm shadow-xl">
+      <div className="text-center mb-5 sm:mb-6">
+        <h3 className="text-xl sm:text-2xl font-serif text-white font-medium mb-2">Automated Daily Job Digest</h3>
         <p className="text-xs text-slate-400 max-w-lg mx-auto leading-relaxed">
           Never miss an opening. Our scheduled background runner queries fresh postings, scores them against your skills, deduplicates previous emails, and delivers the top 10 matches directly to your inbox every morning.
         </p>

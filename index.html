@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AI Career Co-Pilot — Job Search OS</title>
     <!-- Tailwind CSS CDN with forms & container queries plugins -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -45,7 +45,15 @@
     <style>
       /* === FULL-WIDTH OS BASE === */
       *, *::before, *::after { box-sizing: border-box; }
-      html, body { margin: 0; padding: 0; width: 100%; background-color: #080C14; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background-color: #080C14;
+        -webkit-tap-highlight-color: transparent;
+      }
       body {
         background-color: #080C14;
         background-image:
@@ -62,42 +70,44 @@
       ::-webkit-scrollbar-thumb { background: #1D2A3F; border-radius: 9999px; }
       ::-webkit-scrollbar-thumb:hover { background: #2D3E5A; }
 
+      /* === NO SCROLLBAR HELPER === */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
       /* === SIDEBAR LAYOUT === */
       .app-shell {
         display: grid;
-        grid-template-columns: 220px 1fr;
+        grid-template-columns: 240px 1fr;
         grid-template-rows: 56px 1fr;
         grid-template-areas:
           "topbar topbar"
           "sidebar content";
         min-height: 100vh;
         width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
       }
-      @media (max-width: 1024px) {
+      @media (max-width: 1023px) {
         .app-shell {
-          grid-template-columns: 1fr;
-          grid-template-rows: 56px auto 1fr;
-          grid-template-areas:
-            "topbar"
-            "sidebar"
-            "content";
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          width: 100%;
+          max-width: 100vw;
         }
-        .app-sidebar { flex-direction: row; flex-wrap: wrap; padding: 8px 16px; height: auto; }
-      }
-      @media (max-width: 768px) {
-        .app-sidebar { display: none; }
+        .app-sidebar { display: none !important; }
         .mobile-tab-bar { display: flex !important; }
-        .app-shell {
-          grid-template-rows: 56px 1fr;
-          grid-template-areas:
-            "topbar"
-            "content";
-        }
       }
 
-      .app-topbar  { grid-area: topbar; }
+      .app-topbar  { grid-area: topbar; width: 100%; }
       .app-sidebar { grid-area: sidebar; }
-      .app-content { grid-area: content; }
+      .app-content {
+        grid-area: content;
+        min-width: 0;
+        width: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
 
       /* === SIDEBAR NAV === */
       .app-sidebar {
@@ -191,10 +201,13 @@
         position: fixed;
         bottom: 0; left: 0; right: 0;
         z-index: 50;
-        background: #09111F;
+        background: rgba(9, 17, 31, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-top: 1px solid #1D2A3F;
-        padding: 8px 4px;
-        padding-bottom: max(8px, env(safe-area-inset-bottom));
+        padding: 6px 8px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
       }
 
       /* === STAT CARD SHIMMER === */

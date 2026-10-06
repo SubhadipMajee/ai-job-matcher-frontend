@@ -469,19 +469,19 @@ export default function App() {
     <div className="app-shell text-slate-200">
 
       {/* ════ TOP BAR ════ */}
-      <header className="app-topbar sticky top-0 z-50 border-b border-brand-border bg-brand-panel/95 backdrop-blur-md flex items-center justify-between px-4 lg:px-6" style={{height:"56px"}}>
+      <header className="app-topbar sticky top-0 z-50 border-b border-brand-border bg-brand-panel/95 backdrop-blur-md flex items-center justify-between px-3 sm:px-4 lg:px-6" style={{height:"56px"}}>
         {/* Brand */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold text-base shadow-lg shadow-amber-500/20 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold text-sm sm:text-base shadow-lg shadow-amber-500/20 flex-shrink-0">
             ✦
           </div>
-          <div className="hidden sm:flex flex-col leading-tight">
+          <div className="hidden sm:flex flex-col leading-tight min-w-0">
             <span className="text-[10px] font-semibold tracking-widest text-amber-500/80 uppercase">AI Career Co-Pilot</span>
-            <span className="text-sm font-semibold text-white tracking-tight">Job Search OS</span>
+            <span className="text-sm font-semibold text-white tracking-tight truncate">Job Search OS</span>
           </div>
-          <span className="sm:hidden text-sm font-bold text-white">Co-Pilot</span>
+          <span className="sm:hidden text-xs sm:text-sm font-bold text-white truncate">Job Search OS</span>
           <div className="hidden lg:block h-5 w-px bg-brand-border mx-1" />
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] sm:text-[11px] font-medium flex-shrink-0">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -490,9 +490,8 @@ export default function App() {
           </div>
         </div>
 
-
         {/* Right */}
-        <div className="flex items-center gap-2 lg:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 flex-shrink-0">
           <div className="hidden md:flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-surface border border-brand-border text-[11px]">
               <span className="text-slate-400">Pipeline</span>
@@ -504,26 +503,26 @@ export default function App() {
               <span className="text-emerald-400 font-bold">{highestScore > 0 ? `${highestScore}%` : "—"}</span>
             </div>
           </div>
-          <div className="h-5 w-px bg-brand-border" />
+          <div className="hidden md:block h-5 w-px bg-brand-border" />
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {resumeText && (
                 <button onClick={saveResumeToCloud} className="hidden sm:flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 px-2 py-1 rounded-md hover:bg-amber-500/10 transition" title="Sync resume">
                   ☁️ Sync
                 </button>
               )}
-              <div className="flex items-center gap-2 pl-2 pr-2 py-1 rounded-full bg-brand-surface border border-brand-border hover:border-slate-600 transition cursor-pointer">
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 rounded-full bg-brand-surface border border-brand-border hover:border-slate-600 transition cursor-pointer max-w-[130px] sm:max-w-none">
                 {user.user_metadata?.avatar_url ? (
-                  <img src={user.user_metadata.avatar_url} alt="Profile" className="w-6 h-6 rounded-full object-cover" />
+                  <img src={user.user_metadata.avatar_url} alt="Profile" className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0" />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white">{userInitials}</div>
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-white flex-shrink-0">{userInitials}</div>
                 )}
                 <span className="hidden md:inline text-[11px] text-slate-300 font-medium max-w-[120px] truncate">{user.user_metadata?.full_name || user.email}</span>
               </div>
               <button onClick={() => supabase.auth.signOut()} className="text-[11px] text-slate-400 hover:text-white px-2 py-1 rounded-md hover:bg-brand-surface transition">Out</button>
             </div>
           ) : (
-            <button onClick={() => setShowAuthModal(true)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition">
+            <button onClick={() => setShowAuthModal(true)} className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition">
               Sign In →
             </button>
           )}
@@ -585,7 +584,7 @@ export default function App() {
 
       {/* ════ MAIN CONTENT ════ */}
       <main className="app-content">
-        <div className="px-4 lg:px-8 xl:px-10 py-6 flex flex-col gap-6 max-w-screen-2xl">
+        <div className="px-3 sm:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 flex flex-col gap-5 sm:gap-6 max-w-screen-2xl">
 
           {serverStatus === "waking" && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/8 border border-amber-500/25 text-xs text-amber-300">
@@ -596,10 +595,10 @@ export default function App() {
 
           {/* ── TAB 1: JOB MATCHER ── */}
           {activeTab === "find" && (
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex flex-col gap-4 sm:gap-5">
+              <div className="flex items-center justify-between flex-wrap gap-2.5">
                 <div>
-                  <h1 className="text-xl font-serif text-white font-medium tracking-tight">Job Matcher</h1>
+                  <h1 className="text-lg sm:text-xl font-serif text-white font-medium tracking-tight">Job Matcher</h1>
                   <p className="text-xs text-slate-400 mt-0.5">Upload your resume — AI scores live openings against your skills in real time.</p>
                 </div>
                 {jobs.length > 0 && (
@@ -610,26 +609,31 @@ export default function App() {
               </div>
 
               {/* ── Command bar form ── */}
-              <div className="surface-card p-5 shadow-xl">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Resume (PDF)</label>
-                    <div className="relative border border-dashed border-brand-border hover:border-amber-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-brand-panel group">
+              <div className="surface-card p-3.5 sm:p-5 shadow-xl">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-end">
+                  {/* Resume PDF */}
+                  <div className="sm:col-span-2 lg:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2">Resume (PDF)</label>
+                    <div className="relative border border-dashed border-brand-border hover:border-amber-500/60 rounded-xl p-3 sm:p-4 flex sm:flex-col items-center justify-center gap-2 sm:gap-1 text-center cursor-pointer transition bg-brand-panel group min-h-[52px]">
                       <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                      <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">📄</div>
-                      <div className="text-[10px] text-slate-400 leading-tight">
-                        {file ? <span className="text-amber-400 font-semibold">✓ {file.name.slice(0,18)}{file.name.length>18?"…":""}</span>
-                          : resumeText ? <span className="text-emerald-400">✓ Loaded</span>
-                          : "Drop PDF"}
+                      <div className="text-xl sm:text-2xl group-hover:scale-110 transition-transform flex-shrink-0">📄</div>
+                      <div className="text-[10px] text-slate-400 leading-tight truncate max-w-[210px] sm:max-w-none">
+                        {file ? <span className="text-amber-400 font-semibold">✓ {file.name}</span>
+                          : resumeText ? <span className="text-emerald-400 font-semibold">✓ Active Resume</span>
+                          : "Upload / Drop PDF"}
                       </div>
                     </div>
                   </div>
-                  <div className="md:col-span-3 lg:col-span-3">
-                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Role *</label>
-                    <input type="text" placeholder="e.g. Full Stack Developer" value={jobRole} onChange={e => setJobRole(e.target.value)} onKeyDown={e => e.key === "Enter" && analyze()} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 transition" />
+
+                  {/* Target Role */}
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2">Target Role *</label>
+                    <input type="text" placeholder="e.g. Full Stack Developer" value={jobRole} onChange={e => setJobRole(e.target.value)} onKeyDown={e => e.key === "Enter" && analyze()} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-600 transition" />
                   </div>
-                  <div className="md:col-span-2 lg:col-span-2">
-                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Experience</label>
+
+                  {/* Experience */}
+                  <div className="sm:col-span-1 lg:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2">Experience</label>
                     <select value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3 py-2.5 text-xs text-white transition">
                       <option value="">Any Experience</option>
                       <option value="ENTRY_LEVEL">Entry Level (0-2 yrs)</option>
@@ -639,12 +643,16 @@ export default function App() {
                       <option value="EXECUTIVE">Executive / Dir</option>
                     </select>
                   </div>
-                  <div className="md:col-span-2 lg:col-span-2">
-                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
-                    <input type="text" placeholder="Remote, Bangalore, Kolkata…" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 transition" />
+
+                  {/* Location */}
+                  <div className="sm:col-span-1 lg:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2">Location</label>
+                    <input type="text" placeholder="Remote, Bangalore…" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 transition" />
                   </div>
-                  <div className="md:col-span-1 lg:col-span-1">
-                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
+
+                  {/* Type */}
+                  <div className="sm:col-span-1 lg:col-span-1">
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2">Type</label>
                     <select value={jobType} onChange={e => setJobType(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl px-2 py-2.5 text-xs text-white transition">
                       <option value="">Any</option>
                       <option value="FULLTIME">Full Time</option>
@@ -653,15 +661,19 @@ export default function App() {
                       <option value="CONTRACTOR">Contract</option>
                     </select>
                   </div>
-                  <div className="md:col-span-1 lg:col-span-1">
-                    <div className="flex items-center justify-between mb-2">
+
+                  {/* Min Score */}
+                  <div className="sm:col-span-1 lg:col-span-1">
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                       <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Min Score</label>
                       <span className="text-[11px] font-mono font-bold text-amber-400">{minScore}%</span>
                     </div>
                     <input type="range" min="0" max="80" step="5" value={minScore} onChange={e => setMinScore(Number(e.target.value))} className="w-full accent-amber-500 cursor-pointer" />
                   </div>
-                  <div className="md:col-span-1 lg:col-span-1">
-                    <button type="button" onClick={analyze} disabled={loading} className="w-full py-2.5 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 whitespace-nowrap">
+
+                  {/* Submit Button */}
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <button type="button" onClick={analyze} disabled={loading} className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[42px]">
                       {loading ? (
                         <>
                           <span className="animate-spin text-sm">⟳</span>
@@ -714,13 +726,13 @@ export default function App() {
                           {/* P1 #7 Fix: Entire card header clickable with interactive hover state */}
                           <div
                             onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}
-                            className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-slate-800/40 transition-colors select-none group"
+                            className="p-3.5 sm:p-4 flex items-start justify-between gap-2.5 sm:gap-3 cursor-pointer hover:bg-slate-800/40 transition-colors select-none group"
                           >
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-semibold text-white group-hover:text-amber-300 transition leading-snug">
+                              <h3 className="text-sm font-semibold text-white group-hover:text-amber-300 transition leading-snug break-words">
                                 {job.title}
                               </h3>
-                              <div className="text-xs text-slate-400 mt-0.5 font-medium">{job.company}</div>
+                              <div className="text-xs text-slate-400 mt-0.5 font-medium truncate">{job.company}</div>
 
                               {/* P1 #5 Badges: salary, date posted, experience, location */}
                               <div className="flex flex-wrap items-center gap-1.5 mt-2">
@@ -753,7 +765,7 @@ export default function App() {
                             </div>
 
                             {/* P0 #1 Score Badge */}
-                            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                            <div className="flex flex-col items-end gap-1.5 sm:gap-2 flex-shrink-0">
                               <span className={`text-[11px] font-bold font-mono px-2.5 py-1 rounded-full border ${scoreColor}`}>
                                 {sc !== undefined ? `${sc}% Match` : "—"}
                               </span>
@@ -765,7 +777,7 @@ export default function App() {
 
                           {/* P1 #5 & #6 Expanded card details */}
                           {isOpen && (
-                            <div className="border-t border-brand-border bg-brand-panel/70 p-4 flex flex-col gap-4">
+                            <div className="border-t border-brand-border bg-brand-panel/70 p-3 sm:p-4 flex flex-col gap-3.5 sm:gap-4">
 
                               {/* Short Description */}
                               {job.description && (
@@ -797,12 +809,12 @@ export default function App() {
                               )}
 
                               {/* P1 #6 Primary Action Bar */}
-                              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 pt-1">
                                 <button
                                   type="button"
                                   onClick={() => applyPack(job, i)}
                                   disabled={busy[`ap${i}`]}
-                                  className="flex-1 min-w-[170px] py-2 px-3.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-md shadow-amber-500/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                                  className="w-full sm:flex-1 py-2.5 px-3.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-md shadow-amber-500/10 flex items-center justify-center gap-2 disabled:opacity-50 min-h-[38px]"
                                 >
                                   {busy[`ap${i}`] ? (
                                     <>
@@ -812,29 +824,31 @@ export default function App() {
                                   ) : (
                                     <>
                                       <span>📦 Generate Apply Pack</span>
-                                      <span className="text-[10px] font-normal opacity-80">(Resume + Cover)</span>
+                                      <span className="text-[10px] font-normal opacity-80 hidden xs:inline">(Resume + Cover)</span>
                                     </>
                                   )}
                                 </button>
 
-                                <a
-                                  href={job.link}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="py-2 px-3.5 rounded-xl text-xs font-semibold bg-brand-surface hover:bg-slate-700 text-white border border-brand-border transition flex items-center gap-1.5"
-                                >
-                                  <span>Apply Direct</span>
-                                  <span>↗</span>
-                                </a>
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={job.link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex-1 sm:flex-none py-2 px-3.5 rounded-xl text-xs font-semibold bg-brand-surface hover:bg-slate-700 text-white border border-brand-border transition flex items-center justify-center gap-1.5 min-h-[38px]"
+                                  >
+                                    <span>Apply Direct</span>
+                                    <span>↗</span>
+                                  </a>
 
-                                <button
-                                  type="button"
-                                  onClick={() => trackJob(job, i)}
-                                  disabled={busy[`tr${i}`]}
-                                  className="py-2 px-3 rounded-xl text-xs font-medium bg-brand-surface hover:bg-slate-700 text-slate-300 border border-brand-border transition flex items-center gap-1.5 disabled:opacity-50"
-                                >
-                                  {busy[`tr${i}`] ? "Saving…" : "📌 Track"}
-                                </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => trackJob(job, i)}
+                                    disabled={busy[`tr${i}`]}
+                                    className="flex-1 sm:flex-none py-2 px-3 rounded-xl text-xs font-medium bg-brand-surface hover:bg-slate-700 text-slate-300 border border-brand-border transition flex items-center justify-center gap-1.5 disabled:opacity-50 min-h-[38px]"
+                                  >
+                                    {busy[`tr${i}`] ? "Saving…" : "📌 Track"}
+                                  </button>
+                                </div>
                               </div>
 
                               {/* P1 #9 Async Error Alert with Retry */}
@@ -854,25 +868,26 @@ export default function App() {
                               {/* P1 #6 Unified Deep AI Analysis Panel with Tabs */}
                               <div className="rounded-xl border border-brand-border bg-brand-surface/80 overflow-hidden">
                                 {/* Tab Bar */}
-                                <div className="flex border-b border-brand-border bg-brand-panel/80 p-1 gap-1 overflow-x-auto">
+                                <div className="flex border-b border-brand-border bg-brand-panel/80 p-1 gap-1 overflow-x-auto no-scrollbar">
                                   {[
-                                    { id: "skills", label: "Skills & Roadmap", icon: "◎" },
-                                    { id: "semantic", label: "Semantic AI", icon: "🧠" },
-                                    { id: "ats", label: "ATS Check", icon: "❖" },
-                                    { id: "prep", label: "Interview Prep", icon: "🎙️" },
+                                    { id: "skills", label: "Skills & Roadmap", mobileLabel: "Skills", icon: "◎" },
+                                    { id: "semantic", label: "Semantic AI", mobileLabel: "Semantic", icon: "🧠" },
+                                    { id: "ats", label: "ATS Check", mobileLabel: "ATS", icon: "❖" },
+                                    { id: "prep", label: "Interview Prep", mobileLabel: "Prep", icon: "🎙️" },
                                   ].map(tab => (
                                     <button
                                       key={tab.id}
                                       type="button"
                                       onClick={() => setCardTab(p => ({ ...p, [i]: tab.id }))}
-                                      className={`flex-1 min-w-[90px] py-1.5 px-2 rounded-lg text-[11px] font-semibold transition flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                      className={`flex-1 min-w-[68px] sm:min-w-[90px] py-1.5 px-2 rounded-lg text-[11px] font-semibold transition flex items-center justify-center gap-1 whitespace-nowrap ${
                                         activeSubTab === tab.id
                                           ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
                                           : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
                                       }`}
                                     >
                                       <span>{tab.icon}</span>
-                                      <span>{tab.label}</span>
+                                      <span className="hidden xs:inline">{tab.label}</span>
+                                      <span className="xs:hidden">{tab.mobileLabel}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -1151,54 +1166,54 @@ export default function App() {
 
           {/* ── TAB 2: TAILOR & DIFF ── */}
           {activeTab === "tailor" && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4 sm:gap-5">
               <div>
-                <h1 className="text-xl font-serif text-white font-medium tracking-tight">Tailor Studio</h1>
+                <h1 className="text-lg sm:text-xl font-serif text-white font-medium tracking-tight">Tailor Studio</h1>
                 <p className="text-xs text-slate-400 mt-0.5">Generate a job-specific resume version with visual diff tracking.</p>
               </div>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                <div className="surface-card p-5 shadow-xl">
-                  <h2 className="text-sm font-semibold text-white mb-4">Input</h2>
-                  <div className="space-y-4">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5">
+                <div className="surface-card p-4 sm:p-5 shadow-xl">
+                  <h2 className="text-sm font-semibold text-white mb-3 sm:mb-4">Input</h2>
+                  <div className="space-y-3.5 sm:space-y-4">
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Resume PDF</label>
-                      <div className="relative border border-dashed border-brand-border hover:border-amber-500/60 rounded-xl p-5 text-center cursor-pointer transition bg-brand-panel">
+                      <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2">Resume PDF</label>
+                      <div className="relative border border-dashed border-brand-border hover:border-amber-500/60 rounded-xl p-3 sm:p-4 flex sm:flex-col items-center justify-center gap-2 sm:gap-1 text-center cursor-pointer transition bg-brand-panel min-h-[52px]">
                         <input type="file" accept=".pdf" onChange={e => setTailorFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                        <div className="text-2xl mb-1">📄</div>
-                        <div className="text-[11px] text-slate-400">{tailorFile ? `✓ ${tailorFile.name}` : resumeText ? "✓ Using active resume" : "Click to upload"}</div>
+                        <div className="text-xl sm:text-2xl flex-shrink-0">📄</div>
+                        <div className="text-[10px] sm:text-[11px] text-slate-400 truncate max-w-[210px] sm:max-w-none">{tailorFile ? `✓ ${tailorFile.name}` : resumeText ? "✓ Using active resume" : "Click to upload"}</div>
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Job Description *</label>
-                      <textarea rows={8} placeholder="Paste job description here..." value={tailorJD} onChange={e => setTailorJD(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl p-3 text-xs text-white placeholder-slate-600 transition resize-none" />
+                      <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2">Job Description *</label>
+                      <textarea rows={6} placeholder="Paste job description here..." value={tailorJD} onChange={e => setTailorJD(e.target.value)} className="w-full bg-brand-panel border border-brand-border rounded-xl p-3 text-xs text-white placeholder-slate-600 transition resize-none" />
                     </div>
-                    <div className="flex gap-3">
-                      <button type="button" onClick={tailorResume} disabled={tailorLoading} className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20">
+                    <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
+                      <button type="button" onClick={tailorResume} disabled={tailorLoading} className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20 min-h-[40px]">
                         {tailorLoading ? "Tailoring…" : "✦ Generate Tailored Resume"}
                       </button>
                       {tailorResult && (
-                        <button type="button" onClick={viewDiff} className="px-4 py-2.5 rounded-xl bg-brand-surface hover:bg-slate-700 text-amber-300 border border-brand-border text-xs font-semibold transition">🔍 Diff</button>
+                        <button type="button" onClick={viewDiff} className="py-2.5 px-4 rounded-xl bg-brand-surface hover:bg-slate-700 text-amber-300 border border-brand-border text-xs font-semibold transition min-h-[40px]">🔍 Diff</button>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {tailorResult ? (
-                  <div className="surface-card p-5 shadow-xl flex flex-col gap-4">
+                  <div className="surface-card p-4 sm:p-5 shadow-xl flex flex-col gap-3.5 sm:gap-4">
                     <div className="flex items-center justify-between">
                       <h2 className="text-sm font-semibold text-white">Tailored Output</h2>
                       <button onClick={() => dlTxt(tailorResult, "Tailored_Resume.md")} className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">⬇ Download</button>
                     </div>
-                    <div className="prose prose-invert max-w-none text-xs leading-relaxed overflow-y-auto" style={{maxHeight:"520px"}} dangerouslySetInnerHTML={{ __html: renderFormattedResume(tailorResult) }} />
+                    <div className="prose prose-invert max-w-none text-xs leading-relaxed overflow-y-auto max-h-[50vh] sm:max-h-[520px]" dangerouslySetInnerHTML={{ __html: renderFormattedResume(tailorResult) }} />
                   </div>
                 ) : (
-                  <div className="surface-card p-5 flex flex-col items-center justify-center text-center gap-3 min-h-[300px]">
-                    <div className="text-4xl">✨</div>
-                    <p className="text-slate-400 text-sm">Your tailored resume preview will appear here</p>
+                  <div className="surface-card p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 min-h-[220px] sm:min-h-[300px]">
+                    <div className="text-3xl sm:text-4xl">✨</div>
+                    <p className="text-slate-400 text-xs sm:text-sm">Your tailored resume preview will appear here</p>
                   </div>
                 )}
               </div>
-              {diffData && <div className="surface-card p-5 shadow-xl"><DiffViewer diffData={diffData} /></div>}
+              {diffData && <div className="surface-card p-4 sm:p-5 shadow-xl"><DiffViewer diffData={diffData} /></div>}
             </div>
           )}
 
@@ -1206,7 +1221,7 @@ export default function App() {
           {activeTab === "tracker" && (
             <div className="flex flex-col gap-4">
               <div>
-                <h1 className="text-xl font-serif text-white font-medium tracking-tight">Application Tracker</h1>
+                <h1 className="text-lg sm:text-xl font-serif text-white font-medium tracking-tight">Application Tracker</h1>
                 <p className="text-xs text-slate-400 mt-0.5">Drag-and-drop Kanban board across your hiring pipeline stages.</p>
               </div>
               <KanbanTracker
@@ -1224,28 +1239,41 @@ export default function App() {
           {activeTab === "digest" && (
             <div className="flex flex-col gap-4">
               <div>
-                <h1 className="text-xl font-serif text-white font-medium tracking-tight">Daily Digest</h1>
+                <h1 className="text-lg sm:text-xl font-serif text-white font-medium tracking-tight">Daily Digest</h1>
                 <p className="text-xs text-slate-400 mt-0.5">Configure automated daily job alerts delivered to your inbox.</p>
               </div>
               <DigestSettings userEmail={user?.email} resumeSkills={resumeSkills} />
             </div>
           )}
 
-          <div className="h-20 md:h-4" />
+          <div className="h-20 lg:h-6" />
         </div>
       </main>
 
       {/* ════ MOBILE BOTTOM TAB BAR ════ */}
       <div className="mobile-tab-bar">
         {[
-          { id: "find",    icon: "🔍", label: "Match"  },
-          { id: "tailor",  icon: "✨", label: "Tailor" },
-          { id: "tracker", icon: "📌", label: "Track"  },
-          { id: "digest",  icon: "📬", label: "Digest" },
-        ].map(({ id, icon, label }) => (
-          <button key={id} onClick={() => setActiveTab(id)} className={`flex-1 flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition ${activeTab === id ? "text-amber-400" : "text-slate-500 hover:text-slate-300"}`}>
-            <span className="text-xl">{icon}</span>
-            <span className="text-[10px] font-medium">{label}</span>
+          { id: "find",    icon: "🔍", label: "Match",  badge: jobs.length > 0 ? jobs.length : null },
+          { id: "tailor",  icon: "✨", label: "Tailor", badge: null },
+          { id: "tracker", icon: "📌", label: "Track",  badge: activePipelineCount > 0 ? activePipelineCount : null },
+          { id: "digest",  icon: "📬", label: "Digest", badge: null },
+        ].map(({ id, icon, label, badge }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 rounded-xl transition ${
+              activeTab === id
+                ? "text-amber-400 bg-amber-500/10 font-semibold"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span className="text-lg sm:text-xl leading-none">{icon}</span>
+            <span className="text-[10px] leading-tight font-medium">{label}</span>
+            {badge != null && badge > 0 && (
+              <span className="absolute top-0.5 right-1/4 translate-x-1/2 bg-amber-500 text-slate-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none shadow-sm">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )}
           </button>
         ))}
       </div>

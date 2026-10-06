@@ -104,34 +104,34 @@ export default function AuthModal({ isOpen = true, onClose, onAuthSuccess, onSuc
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
     >
       {/* Backdrop click area */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md rounded-2xl bg-slate-900/95 border border-slate-800 p-6 sm:p-8 shadow-2xl backdrop-blur-xl text-slate-200">
+      <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl bg-slate-900/95 border border-slate-800 p-5 sm:p-8 shadow-2xl backdrop-blur-xl text-slate-200">
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 text-slate-400 hover:text-white text-xl p-1.5 rounded-lg hover:bg-slate-800/80 transition"
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 text-slate-400 hover:text-white text-xl p-1.5 rounded-lg hover:bg-slate-800/80 transition"
         >
           ✕
         </button>
 
         {/* Modal Header */}
-        <div className="mb-6">
+        <div className="mb-5 sm:mb-6 pr-6 sm:pr-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold text-sm shadow-md shadow-amber-500/20">
+            <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold text-sm shadow-md shadow-amber-500/20 flex-shrink-0">
               ✦
             </span>
             <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">
               AI Career Co-Pilot
             </span>
           </div>
-          <h2 className="text-2xl font-serif font-medium text-white">
+          <h2 className="text-xl sm:text-2xl font-serif font-medium text-white">
             {isSignUp ? "Create your workspace account" : "Sign in to your workspace"}
           </h2>
           <p className="text-xs text-slate-400 mt-1">
@@ -239,11 +239,11 @@ export default function AuthModal({ isOpen = true, onClose, onAuthSuccess, onSuc
             />
           </div>
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
             <button
               type="submit"
               disabled={loading || oauthLoading !== null}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20 active:scale-[0.99] flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-lg shadow-amber-500/20 active:scale-[0.99] flex items-center justify-center gap-1.5 min-h-[40px]"
             >
               {loading ? "Verifying…" : isSignUp ? "Create Account" : "Sign In"}
             </button>
@@ -252,7 +252,7 @@ export default function AuthModal({ isOpen = true, onClose, onAuthSuccess, onSuc
                 type="button"
                 onClick={handleMagicLink}
                 disabled={loading || oauthLoading !== null}
-                className="py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
+                className="py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition min-h-[40px] text-center"
                 title="Log in without a password via email link"
               >
                 ✉ Magic Link
